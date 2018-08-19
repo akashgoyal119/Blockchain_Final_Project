@@ -2,7 +2,9 @@ import random
 import time
 import json
 from MagicCoin.MC_Output import Output
+from MagicCoin.MC_Contract import Contract
 from hashlib import sha256
+import time
 
 
 class Transaction:
@@ -17,23 +19,23 @@ class Transaction:
         self.is_valid = None
         self.contract = contract
 
-    def determine_outcome(self):
+    def validate_transaction(self):
         if time.time() < self.contract.check_result_time:
             return None
         else:
             # we should probably actually implement a better version of this later...
             if not self.is_valid:
-                self.is_valid = random.randint(0, 1)
+                self.is_valid = 1 if int(self.contract.created_time) % 2 == 0 else 0
 
     @property
     # the odds should be implemented as a float, so for example, a bet of $10 with odds 0.5 implies that
     # the posting better will win $5 if he wins or lose $10 if he loses.
     # If odds are 1.5, posting better wins $15 if he wins or loses $10 if he loses
-    def money_to_posting_better(self):
+    def money_paid_by_the_better(self):
         return self.contract.quantity * self.contract.odds
     
     @property
-    def money_to_accepting_better(self):
+    def money_paid_by_the_receiver(self):
         return self.contract.quantity
     
     @property
@@ -68,25 +70,39 @@ class Transaction:
         transaction_list: list of Transaction obj to be included
         in the new block
         """
-        # coinbase reward is 50 MagicCoins
+        input_value = 0
+        input_obj = Output.generate_output(input_value)
+        # coinbase reward is 50000 MagicCoins
         output_value = cls.coinbase_reward
         # aggregate transaction fee of the transactions that will
         # be included in the new block.
         output_value += total_transaction_fee
         public_key = 'CONGRATS YOU WON THE COINBASE REWARD!!!'
-        digtal_sig = Output.generate_random_script()
+        digtal_sig = input_obj.digital_sig
+        output_obj = Output(output_value, public_key, digtal_sig)
 
-        input_value = Output.generate_random_value(1, 1000000)
-        list_of_inputs = Output.generate_output(input_value)
-
-        list_of_outputs = Output(output_value, public_key, digtal_sig)
-        return cls(list_of_inputs, list_of_outputs, None)
+        coinbase_contract = Contract('Coinbase Contract','Coinbase',output_value,'Coinbase',1,'Coinbase',
+                    'Coinbase','Coinbase','Coinbase')
+                    
+        return cls(input_obj, output_obj, coinbase_contract)
 
     def transaction_fee(self):
         """Returns transaction fee for a Transaction obj in quidditch.
         """
-        transaction_fee = 0
-        for txn_in, txn_out in zip(self.list_of_inputs, self.list_of_outputs):
-            transaction_fee += txn_in.value - txn_out.value
+        transaction_fee = self.input.value - self.output.value
         return transaction_fee
 
+    def __repr__(self):
+        """Representation of Transaction object.
+        """
+        check_result_time = str(time.strftime('%Y-%m-%d %H:%M:%S',
+                                        time.localtime(self.contract.check_result_time)))
+        rep = '\n======= PRINT TRANSACTION =======\n'
+        rep += f'1) Input: {self.input}\n'
+        rep += f'2) Output: {self.output}\n'
+        rep += f'3) Is_Valid: {self.is_valid}\n'
+        rep += f'4) Contract Hash: {self.contract.contract_hash_value}\n'
+        rep += f'5) Contract Source of Truth: {self.contract.source_of_truth}\n'
+        rep += f'6) Contract Check Result Time: {check_result_time}\n'
+        rep += '======= END OF TRANSACTION =======\n'
+        return rep

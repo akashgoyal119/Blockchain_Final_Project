@@ -149,16 +149,17 @@ class Block:
         # output_list = [Output(value_out, 0, script_out)]
         # genesis_txn = [Transaction(input_list, output_list)]
         # return cls('0'*64, genesis_txn)
-        jesus_christ = User('1111111')
-        genesis_contract = jesus_christ.generate_contract()
+        first_user = User('1111111')
+        genesis_contract = first_user.generate_random_contract()
         #jesus_christ.accept_bet(genesis_contract)
 
-        input_1 = Output(value=10000,
+        # genesis_block transaction.
+        input_1 = Output(value=100000,
                          public_address=genesis_contract.party1_public_key,
                          digital_sig=genesis_contract.party1_digital_sig)
-        # output_1 = Output(value=9950,
-        #                   public_address=self.public_key,
-        #                   digital_sig=dig_sig2)
-        genesis_transaction = [Transaction(input_1, input_1, genesis_contract)]
+        output_1 = Output(value=100000-50,
+                           public_address=genesis_contract.party1_public_key,
+                           digital_sig=genesis_contract.party1_digital_sig)
+        genesis_transaction = [Transaction(input_1, output_1, genesis_contract)]
         return cls('0' * 64, genesis_transaction)
 

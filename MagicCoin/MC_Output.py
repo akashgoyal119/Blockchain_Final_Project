@@ -23,8 +23,8 @@ class Output:
     def generate_output(cls, value):
         """Returns Output object.
         """
-        public_address = Output.generate_random_script()
-        digital_sig = Output.generate_random_script()
+        public_address = Output.generate_random_script(32)
+        digital_sig = Output.generate_random_script(32)
         return cls(value, public_address, digital_sig)
 
     @staticmethod
@@ -35,11 +35,11 @@ class Output:
         return int(random.randint(l_bound, u_bound))
 
     @staticmethod
-    def generate_random_script():
+    def generate_random_script(script_length):
         """Returns random string for script in Output object.
         """
         # reference: https://pythontips.com/2013/07/28/generating-a-random-string/
-        return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(32)])
+        return ''.join([random.choice(string.ascii_letters + string.digits) for n in range(script_length)])
 
     def __repr__(self):
         output = f'value: {self.value}\n'

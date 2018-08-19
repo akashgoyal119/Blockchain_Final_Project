@@ -7,6 +7,7 @@ service FullNode {
   rpc new_transaction_broadcast (Transaction) returns (txn_broadcast_reply) {}
   rpc new_block_broadcast (Block) returns (block_broadcast_reply) {}
   rpc existing_block_broadcast (Block) returns (block_broadcast_reply) {}
+  rpc new_contract_broadcast (Contract) returns (contract_broadcast_reply) {}
 }
 
 // Request handshake.
@@ -22,9 +23,10 @@ message hs_reply {
   repeated string message = 1;
 }
 
+
 // New Transaction for broadcasting.
 message Transaction {
-  string serialized_transaction = 1;
+  bytes serialized_transaction = 1;
   string broadcast_node = 2;
 }
 
@@ -35,10 +37,21 @@ message txn_broadcast_reply {
 
 // Block for broadcasting
 message Block {
-  string serialized_block = 1;
+  bytes serialized_block = 1;
 }
 
 // Response message for new block broadcast.
 message block_broadcast_reply {
+  string message = 1;
+}
+
+
+// New Contract for broadcasting
+message Contract {
+  bytes serialized_contract = 1;
+  string broadcast_node = 2;
+}
+
+message contract_broadcast_reply {
   string message = 1;
 }

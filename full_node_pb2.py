@@ -19,7 +19,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
   name='full_node.proto',
   package='',
   syntax='proto3',
-  serialized_pb=_b('\n\x0f\x66ull_node.proto\"Q\n\nhs_request\x12\x10\n\x08nVersion\x18\x01 \x01(\x05\x12\r\n\x05nTime\x18\x02 \x01(\x01\x12\x0e\n\x06\x61\x64\x64rMe\x18\x03 \x01(\t\x12\x12\n\nbestHeight\x18\x04 \x01(\x05\"\x1b\n\x08hs_reply\x12\x0f\n\x07message\x18\x01 \x03(\t\"E\n\x0bTransaction\x12\x1e\n\x16serialized_transaction\x18\x01 \x01(\t\x12\x16\n\x0e\x62roadcast_node\x18\x02 \x01(\t\"&\n\x13txn_broadcast_reply\x12\x0f\n\x07message\x18\x01 \x01(\t\"!\n\x05\x42lock\x12\x18\n\x10serialized_block\x18\x01 \x01(\t\"(\n\x15\x62lock_broadcast_reply\x12\x0f\n\x07message\x18\x01 \x01(\t2\xeb\x01\n\x08\x46ullNode\x12%\n\thandshake\x12\x0b.hs_request\x1a\t.hs_reply\"\x00\x12\x41\n\x19new_transaction_broadcast\x12\x0c.Transaction\x1a\x14.txn_broadcast_reply\"\x00\x12\x37\n\x13new_block_broadcast\x12\x06.Block\x1a\x16.block_broadcast_reply\"\x00\x12<\n\x18\x65xisting_block_broadcast\x12\x06.Block\x1a\x16.block_broadcast_reply\"\x00\x62\x06proto3')
+  serialized_pb=_b('\n\x0f\x66ull_node.proto\"Q\n\nhs_request\x12\x10\n\x08nVersion\x18\x01 \x01(\x05\x12\r\n\x05nTime\x18\x02 \x01(\x01\x12\x0e\n\x06\x61\x64\x64rMe\x18\x03 \x01(\t\x12\x12\n\nbestHeight\x18\x04 \x01(\x05\"\x1b\n\x08hs_reply\x12\x0f\n\x07message\x18\x01 \x03(\t\"E\n\x0bTransaction\x12\x1e\n\x16serialized_transaction\x18\x01 \x01(\x0c\x12\x16\n\x0e\x62roadcast_node\x18\x02 \x01(\t\"&\n\x13txn_broadcast_reply\x12\x0f\n\x07message\x18\x01 \x01(\t\"!\n\x05\x42lock\x12\x18\n\x10serialized_block\x18\x01 \x01(\x0c\"(\n\x15\x62lock_broadcast_reply\x12\x0f\n\x07message\x18\x01 \x01(\t\"?\n\x08\x43ontract\x12\x1b\n\x13serialized_contract\x18\x01 \x01(\x0c\x12\x16\n\x0e\x62roadcast_node\x18\x02 \x01(\t\"+\n\x18\x63ontract_broadcast_reply\x12\x0f\n\x07message\x18\x01 \x01(\t2\xad\x02\n\x08\x46ullNode\x12%\n\thandshake\x12\x0b.hs_request\x1a\t.hs_reply\"\x00\x12\x41\n\x19new_transaction_broadcast\x12\x0c.Transaction\x1a\x14.txn_broadcast_reply\"\x00\x12\x37\n\x13new_block_broadcast\x12\x06.Block\x1a\x16.block_broadcast_reply\"\x00\x12<\n\x18\x65xisting_block_broadcast\x12\x06.Block\x1a\x16.block_broadcast_reply\"\x00\x12@\n\x16new_contract_broadcast\x12\t.Contract\x1a\x19.contract_broadcast_reply\"\x00\x62\x06proto3')
 )
 
 
@@ -117,8 +117,8 @@ _TRANSACTION = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='serialized_transaction', full_name='Transaction.serialized_transaction', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -186,8 +186,8 @@ _BLOCK = _descriptor.Descriptor(
   fields=[
     _descriptor.FieldDescriptor(
       name='serialized_block', full_name='Block.serialized_block', index=0,
-      number=1, type=9, cpp_type=9, label=1,
-      has_default_value=False, default_value=_b("").decode('utf-8'),
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
       message_type=None, enum_type=None, containing_type=None,
       is_extension=False, extension_scope=None,
       options=None, file=DESCRIPTOR),
@@ -238,12 +238,83 @@ _BLOCK_BROADCAST_REPLY = _descriptor.Descriptor(
   serialized_end=317,
 )
 
+
+_CONTRACT = _descriptor.Descriptor(
+  name='Contract',
+  full_name='Contract',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='serialized_contract', full_name='Contract.serialized_contract', index=0,
+      number=1, type=12, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b(""),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+    _descriptor.FieldDescriptor(
+      name='broadcast_node', full_name='Contract.broadcast_node', index=1,
+      number=2, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=319,
+  serialized_end=382,
+)
+
+
+_CONTRACT_BROADCAST_REPLY = _descriptor.Descriptor(
+  name='contract_broadcast_reply',
+  full_name='contract_broadcast_reply',
+  filename=None,
+  file=DESCRIPTOR,
+  containing_type=None,
+  fields=[
+    _descriptor.FieldDescriptor(
+      name='message', full_name='contract_broadcast_reply.message', index=0,
+      number=1, type=9, cpp_type=9, label=1,
+      has_default_value=False, default_value=_b("").decode('utf-8'),
+      message_type=None, enum_type=None, containing_type=None,
+      is_extension=False, extension_scope=None,
+      options=None, file=DESCRIPTOR),
+  ],
+  extensions=[
+  ],
+  nested_types=[],
+  enum_types=[
+  ],
+  options=None,
+  is_extendable=False,
+  syntax='proto3',
+  extension_ranges=[],
+  oneofs=[
+  ],
+  serialized_start=384,
+  serialized_end=427,
+)
+
 DESCRIPTOR.message_types_by_name['hs_request'] = _HS_REQUEST
 DESCRIPTOR.message_types_by_name['hs_reply'] = _HS_REPLY
 DESCRIPTOR.message_types_by_name['Transaction'] = _TRANSACTION
 DESCRIPTOR.message_types_by_name['txn_broadcast_reply'] = _TXN_BROADCAST_REPLY
 DESCRIPTOR.message_types_by_name['Block'] = _BLOCK
 DESCRIPTOR.message_types_by_name['block_broadcast_reply'] = _BLOCK_BROADCAST_REPLY
+DESCRIPTOR.message_types_by_name['Contract'] = _CONTRACT
+DESCRIPTOR.message_types_by_name['contract_broadcast_reply'] = _CONTRACT_BROADCAST_REPLY
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
 hs_request = _reflection.GeneratedProtocolMessageType('hs_request', (_message.Message,), dict(
@@ -288,6 +359,20 @@ block_broadcast_reply = _reflection.GeneratedProtocolMessageType('block_broadcas
   ))
 _sym_db.RegisterMessage(block_broadcast_reply)
 
+Contract = _reflection.GeneratedProtocolMessageType('Contract', (_message.Message,), dict(
+  DESCRIPTOR = _CONTRACT,
+  __module__ = 'full_node_pb2'
+  # @@protoc_insertion_point(class_scope:Contract)
+  ))
+_sym_db.RegisterMessage(Contract)
+
+contract_broadcast_reply = _reflection.GeneratedProtocolMessageType('contract_broadcast_reply', (_message.Message,), dict(
+  DESCRIPTOR = _CONTRACT_BROADCAST_REPLY,
+  __module__ = 'full_node_pb2'
+  # @@protoc_insertion_point(class_scope:contract_broadcast_reply)
+  ))
+_sym_db.RegisterMessage(contract_broadcast_reply)
+
 
 
 _FULLNODE = _descriptor.ServiceDescriptor(
@@ -296,8 +381,8 @@ _FULLNODE = _descriptor.ServiceDescriptor(
   file=DESCRIPTOR,
   index=0,
   options=None,
-  serialized_start=320,
-  serialized_end=555,
+  serialized_start=430,
+  serialized_end=731,
   methods=[
   _descriptor.MethodDescriptor(
     name='handshake',
@@ -333,6 +418,15 @@ _FULLNODE = _descriptor.ServiceDescriptor(
     containing_service=None,
     input_type=_BLOCK,
     output_type=_BLOCK_BROADCAST_REPLY,
+    options=None,
+  ),
+  _descriptor.MethodDescriptor(
+    name='new_contract_broadcast',
+    full_name='FullNode.new_contract_broadcast',
+    index=4,
+    containing_service=None,
+    input_type=_CONTRACT,
+    output_type=_CONTRACT_BROADCAST_REPLY,
     options=None,
   ),
 ])

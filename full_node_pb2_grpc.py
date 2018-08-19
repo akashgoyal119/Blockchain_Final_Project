@@ -34,6 +34,11 @@ class FullNodeStub(object):
         request_serializer=full__node__pb2.Block.SerializeToString,
         response_deserializer=full__node__pb2.block_broadcast_reply.FromString,
         )
+    self.new_contract_broadcast = channel.unary_unary(
+        '/FullNode/new_contract_broadcast',
+        request_serializer=full__node__pb2.Contract.SerializeToString,
+        response_deserializer=full__node__pb2.contract_broadcast_reply.FromString,
+        )
 
 
 class FullNodeServicer(object):
@@ -68,6 +73,13 @@ class FullNodeServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
+  def new_contract_broadcast(self, request, context):
+    # missing associated documentation comment in .proto file
+    pass
+    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
+    context.set_details('Method not implemented!')
+    raise NotImplementedError('Method not implemented!')
+
 
 def add_FullNodeServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -90,6 +102,11 @@ def add_FullNodeServicer_to_server(servicer, server):
           servicer.existing_block_broadcast,
           request_deserializer=full__node__pb2.Block.FromString,
           response_serializer=full__node__pb2.block_broadcast_reply.SerializeToString,
+      ),
+      'new_contract_broadcast': grpc.unary_unary_rpc_method_handler(
+          servicer.new_contract_broadcast,
+          request_deserializer=full__node__pb2.Contract.FromString,
+          response_serializer=full__node__pb2.contract_broadcast_reply.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

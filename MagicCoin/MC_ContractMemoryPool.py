@@ -3,6 +3,7 @@
 
 from MagicCoin.MC_Contract import Contract
 from MagicCoin.MC_User import User
+import uuid
 
 
 class ContractMemoryPool:
@@ -27,10 +28,12 @@ class ContractMemoryPool:
         """Fill the contract memory pool with randomly
         generated contract objects.
         """
-        user = User(public_key='111222333444555666777')
+        # generate random public key.
+        public_key = str(uuid.uuid4())
+        user = User(public_key=public_key)
         contract_list = []
         for i in range(number_of_contract):
-            contract_list.append(user.generate_contract())
+            contract_list.append(user.generate_random_contract())
         return contract_list
 
     def size(self):
@@ -60,7 +63,12 @@ class ContractMemoryPool:
             return 'Type Error: Must add contract object.'
 
     def get_contract_by_hash(self, contract_hash):
+        temp_contract_pool = []
+        res = "Contract does not exist."
         for contract in self.list:
             if contract.contract_hash_value == contract_hash:
-                return contract
-        return "Contract does not exist."
+                res = contract
+            else:
+                temp_contract_pool.append(contract)
+        self.list = temp_contract_pool
+        return res
