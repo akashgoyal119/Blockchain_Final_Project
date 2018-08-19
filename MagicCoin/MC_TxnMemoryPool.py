@@ -22,7 +22,14 @@ class TxnMemoryPool:
             assert(type(number_of_txn) is int)
             self.list = self.fill_txn_memory_pool(number_of_txn)
         except:
+            raise
             return 'Error: number_of_txn must be in int.'
+        self.valid_list = []
+
+    def update_valid_transaction_list(self):
+        for txn in self.list:
+            if txn.is_valid == 1:
+                self.valid_list.append(txn)
 
     def fill_txn_memory_pool(self, number_of_txn):
         """Fill the transaction memory pool with randomly
@@ -34,9 +41,9 @@ class TxnMemoryPool:
         return transaction_list
 
     def size(self):
-        """Returns the size of the pool.
+        """Returns the size of the valid transaction pool.
         """
-        return len(self.list)
+        return len(self.valid_list)
 
     def get_transaction(self, idx=0):
         """Returns the oldest Transaction object in the pool.
@@ -45,7 +52,7 @@ class TxnMemoryPool:
             return None
         try:
             # remove and return the oldest Transaction object in the pool
-            txn = self.list.pop(idx)
+            txn = self.valid_list.pop(idx)
             return txn
         except:
             return f'Error: Index must be an integer in range [0, {self.size()-1}]'

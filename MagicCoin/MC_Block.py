@@ -150,7 +150,7 @@ class Block:
         # genesis_txn = [Transaction(input_list, output_list)]
         # return cls('0'*64, genesis_txn)
         first_user = User('1111111')
-        genesis_contract = first_user.generate_contract()
+        genesis_contract = first_user.generate_random_contract()
         #jesus_christ.accept_bet(genesis_contract)
 
         # genesis_block transaction.

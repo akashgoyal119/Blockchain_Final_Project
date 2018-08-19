@@ -33,7 +33,7 @@ class ContractMemoryPool:
         user = User(public_key=public_key)
         contract_list = []
         for i in range(number_of_contract):
-            contract_list.append(user.generate_contract())
+            contract_list.append(user.generate_random_contract())
         return contract_list
 
     def size(self):
