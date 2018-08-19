@@ -479,8 +479,8 @@ def run():
 	to other peers in the network.
 	"""
 	print('... BEGIN GENERATING AND BROADCASTING TRANSACTIONS ...')
-	contract_txn = threading.Thread(target=full_node.generate_and_broadcast_txn)
-	contract_txn.start()
+	txn_broadcast = threading.Thread(target=full_node.generate_and_broadcast_txn)
+	txn_broadcast.start()
 
 
 	"""
