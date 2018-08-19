@@ -1,0 +1,44 @@
+syntax = "proto3";
+
+
+// The handshake service definition.
+service FullNode {
+  rpc handshake (hs_request) returns (hs_reply) {}
+  rpc new_transaction_broadcast (Transaction) returns (txn_broadcast_reply) {}
+  rpc new_block_broadcast (Block) returns (block_broadcast_reply) {}
+  rpc existing_block_broadcast (Block) returns (block_broadcast_reply) {}
+}
+
+// Request handshake.
+message hs_request {
+  int32 nVersion = 1;
+  double nTime = 2;
+  string addrMe = 3;
+  int32 bestHeight = 4;
+}
+
+// Response for handshake.
+message hs_reply {
+  repeated string message = 1;
+}
+
+// New Transaction for broadcasting.
+message Transaction {
+  string serialized_transaction = 1;
+  string broadcast_node = 2;
+}
+
+// Response message for new transaction broadcast.
+message txn_broadcast_reply {
+  string message = 1;
+}
+
+// Block for broadcasting
+message Block {
+  string serialized_block = 1;
+}
+
+// Response message for new block broadcast.
+message block_broadcast_reply {
+  string message = 1;
+}

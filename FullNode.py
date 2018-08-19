@@ -1,0 +1,468 @@
+from __future__ import print_function
+from concurrent import futures
+import grpc, socket, time, random, threading
+import json
+
+import registrar_pb2
+import registrar_pb2_grpc
+import full_node_pb2
+import full_node_pb2_grpc
+
+from MagicCoin.MC_Block import Block
+from MagicCoin.MC_BlockChain import BlockChain
+from MagicCoin.MC_Miner import Miner
+from MagicCoin.MC_Output import Output
+from MagicCoin.MC_Transaction import Transaction
+from MagicCoin.MC_TxnMemoryPool import TxnMemoryPool
+
+
+_ONE_DAY_IN_SECONDS = 60 * 60 * 24
+
+
+class FullNode(full_node_pb2_grpc.FullNodeServicer):
+
+	def __init__(self):
+		self.known_peers_list = []	# list of known peers (return receiving handshake request)
+		self.handshaken_peers_list = []	# keep track of nodes already shaken hands with
+		genesis_block = Block.generate_genesis_block()
+		self.blockchain = BlockChain(genesis_block)		# Initialize BlockChain with genesis_block
+		self.txn_pool = TxnMemoryPool(number_of_txn=0)	# Initialize empty txn pool
+		self.miner = Miner()	# Initialize miner
+	
+	def handshake(self, request, context):
+		"""Receives handshake request from a newly joined node
+		and returns ip addresses of all known nodes.
+		If the handshake calling node is new to the receiving node, the
+		receiving node will initiate handshake with that node.
+		
+		Note: This algorithm allows each node to shake hands with 
+		all the other nodes in the network exactly once.
+		"""
+		print('\nHandshake RECEIVED from         : ' + request.addrMe)
+		# only add new ip address
+		if request.addrMe not in self.known_peers_list:
+			self.known_peers_list.append(request.addrMe)
+		print('Handshake RESPONSE (known nodes): ' + '  '.join(self.known_peers_list) +'\n')
+		response = full_node_pb2.hs_reply()
+		for ip_addr in self.known_peers_list:
+			response.message.append(ip_addr)
+		# initiate handshake with newly added peer.
+		if request.addrMe not in self.handshaken_peers_list:
+			self.request_handshake(request.addrMe)
+		# if the new node's local blockchain is not complete,
+		# send the blocks that the new node needs in order to
+		# start mining.
+		if request.bestHeight < self.blockchain.height():
+			print('###########################################')
+			print(f'Need to send Blocks to node: {request.addrMe}')
+			for i in range(request.bestHeight+1, self.blockchain.height()+1):
+				block_to_send = self.blockchain.get_block_by_height(i)
+				self.send_block_to_node(
+					block_to_send=block_to_send, 
+					receiving_node=request.addrMe, 
+					block_height=i)
+			print('###########################################')
+		return response
+
+	def request_handshake(self, ip_addr):
+		"""Requests handshake to ip_addr and
+		returns list of known ip address from the
+		handshake receiving node.
+		"""
+		self.handshaken_peers_list.append(ip_addr)
+		print("\nRequesting handshake to node: " + ip_addr)
+		with grpc.insecure_channel(ip_addr+':12345') as channel:
+			stub = full_node_pb2_grpc.FullNodeStub(channel)
+			# hs_response is a list of ip address
+			hs_response = stub.handshake(
+				full_node_pb2.hs_request(nVersion=1,
+										nTime=current_time(),
+										addrMe=get_ip(),
+										bestHeight=self.blockchain.height())
+			)
+		print(f"Received list of known nodes: {'  '.join(hs_response.message)}")
+		#print(f"Current Node's list of known nodes: {'  '.join(self.handshaken_peers_list)}\n")
+		print(f"Current Node's list of known nodes: {'  '.join(self.known_peers_list)}\n")
+		return hs_response.message
+
+	def generate_transaction(self):
+		"""Generate new transaction object.
+		"""
+		transaction = Transaction.generate_transaction()
+		# add to memory pool
+		self.txn_pool.add_transaction(transaction)
+		print('++++++++++++++++++++++++++++++++++++++++++++')
+		print('Generated transaction:')
+		print(f'{transaction.transaction_hash}')
+		print(f'MEMORY POOL SIZE: {len(self.txn_pool.list)}')
+		print('++++++++++++++++++++++++++++++++++++++++++++')
+		return transaction
+
+	def broadcast_transaction(self, transaction, broadcast_node):
+		"""Broadcast newly generated transaction.
+		"""
+		serialized_txn = json.dumps(transaction, default=lambda x: x.__dict__)
+		for ip_addr in self.known_peers_list:
+			if ip_addr != broadcast_node:
+				print(f'Broadcasting transaction to: {ip_addr}')
+				with grpc.insecure_channel(ip_addr+':12345') as channel:
+					stub = full_node_pb2_grpc.FullNodeStub(channel)
+					txn = full_node_pb2.Transaction(serialized_transaction=serialized_txn,
+													broadcast_node=broadcast_node)
+					stub.new_transaction_broadcast(txn)
+	
+	def new_transaction_broadcast(self, request, context):
+		"""Receives new transaction from other nodes and if the transaction is
+		new to the receiving node, the transaction is also broadcasted
+		to the remaining nodes in the network.
+		
+		Note: If the received transaction is new to the node, add to memory pool and
+		broadcast that transaction to other nodes, excluding the node that
+		broadcasted the said transaction.
+
+		self.receiver_public_key = receiver_public_key
+        self.receiver_digital_sig = receiver_digital_sig
+        self.sender_digital_sig = sender_digital_sig
+        self.sender_public_key = sender_public_key
+        self.is_valid = None
+        self.contract = contract
+
+		def __init__(self, event, team, quantity, expiration_date, odds, 
+                source_of_truth, check_result_time, public_key, digital_sig):
+		"""
+		txn_dict = json.loads(request.serialized_transaction)
+		
+		receiver_public_key = txn_dict['receiver_public_key']
+		receiver_digital_sig = txn_dict['receiver_digital_sig']
+		sender_digital_sig = txn_dict['sender_digital_sig']
+		sender_public_key = txn_dict['sender_public_key']
+		is_valid = txn_dict['is_valid']
+		
+		
+
+		broadcast_node = request.broadcast_node
+		# instantiate transaction object
+		transaction = Transaction(input_list, output_list)
+		print(f'Received transaction from: {broadcast_node}')
+		need_to_broadcast = True
+		# if the received transaction already exists in the memory pool, do nothing
+		try:
+			for txn in self.txn_pool.list:
+				if transaction.transaction_hash == txn.transaction_hash:
+					print(f'Transaction already exists in memory pool: {transaction.transaction_hash}')
+					need_to_broadcast = False
+		except:
+			pass
+		if need_to_broadcast is True:
+			# if the received transaction is new, add to the memory pool
+			# and also propagate the transaction to other nodes.
+			self.txn_pool.add_transaction(transaction) # adding new received transaction to memory pool
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			print('Adding Transaction to Transaction Memory Pool:')
+			print(f'{transaction.transaction_hash}')
+			print(f'MEMORY POOL SIZE: {len(self.txn_pool.list)}')
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			# propagate new received transaction to other peers in the network.
+			# (excluding the node that generated and broadcasted the transaction)
+			self.broadcast_transaction(transaction, broadcast_node)
+		response = full_node_pb2.txn_broadcast_reply(message="broadcast received")
+		return response
+	
+	def generate_and_broadcast_txn(self):
+		"""Constantly generates and broadcasts transactions
+		to other known peers in the network.
+		"""
+		while True:
+			time.sleep(random.randint(2, 5))
+			# generate transaction
+			txn = self.generate_transaction()
+			broadcasting_node = get_ip()	# broadcasting node's ip address
+			# broadcast new transaction to other peers in the network.
+			self.broadcast_transaction(txn, broadcasting_node)
+
+	def send_block_to_node(self, block_to_send, receiving_node, block_height):
+		"""Sends blocks to the newly joined node if that node
+		has incomplete blockchain.
+
+		Note: This method is implemented with the purpose of
+		avoiding forks.
+		"""
+		serialized_block = json.dumps(block_to_send, default=lambda x: x.__dict__)
+		with grpc.insecure_channel(receiving_node+':12345') as channel:
+			stub = full_node_pb2_grpc.FullNodeStub(channel)
+			existing_block = full_node_pb2.Block(serialized_block=serialized_block)
+			response = stub.existing_block_broadcast(existing_block)
+		print(f"Sending BLOCK in BlockChain Height {block_height} to: {receiving_node}")
+	
+	def broadcast_block(self, new_block):
+		"""Broadcasts newly mined block to other peers
+		in the network.
+		"""
+		serialized_block = json.dumps(new_block, default=lambda x: x.__dict__)
+		for ip_addr in self.known_peers_list:
+			with grpc.insecure_channel(ip_addr+':12345') as channel:
+				stub = full_node_pb2_grpc.FullNodeStub(channel)
+				new_block = full_node_pb2.Block(serialized_block=serialized_block)
+				response = stub.new_block_broadcast(new_block)
+			print(f"Broadcasting New Block to: {ip_addr}")
+		# after publishing a new block to other known peers, sleep between 0-3 seconds
+		sleep_interval = random.randint(0, 3)
+		print(f"... After broadcasting new block to other nodes, sleep for: {sleep_interval} seconds ...")
+		time.sleep(sleep_interval)
+
+	def existing_block_broadcast(self, request, context):
+		"""Receives blocks from other nodes and locally builds
+		the node's blockchain.
+
+		Note: This method ensures the consistency of the blockchain
+		by receiving existing blocks to the newly joined node's blockchain
+		so that newly joined nodes blockchain are the same length as the
+		the network's best blockchain.
+		"""
+		block_dict = json.loads(request.serialized_block)
+		hash_prev_block_header = block_dict['hash_prev_block_header']
+		txn_list = block_dict['transactions_list']
+		txn_dict = block_dict['transactions']	# key is the transaction_hash
+		new_block_transactions_list = []
+		for txn in txn_list:
+			if len(txn['list_of_inputs']) != 0:
+				# input list for creating Transaction() object.
+				input_list = [Output(
+					value=txn['list_of_inputs'][0]['value'],
+					index=txn['list_of_inputs'][0]['index'],
+					script=txn['list_of_inputs'][0]['script'],
+				)]
+			else:
+				# coinbase transaction does not have any input
+				input_list = []
+			# output list for creating Transaction() object.
+			output_list = [Output(
+				value=txn['list_of_outputs'][0]['value'],
+				index=txn['list_of_outputs'][0]['index'],
+				script=txn['list_of_outputs'][0]['script'],
+			)]
+			# instantiate Transaction() object
+			transaction = Transaction(input_list, output_list)
+			# add Transaction() object to the new block's transaction list
+			new_block_transactions_list.append(transaction)
+		# instantiate new Block() object using the new block's transaction list created above.
+		new_block = Block(hash_prev_block_header, new_block_transactions_list)
+		# add new block to local BlockChain() object.
+		self.blockchain.add_block(new_block)
+		print('**************************************')
+		print('... EXISTING BLOCK RECEIVED ...')
+		print('... EXISTING BLOCK ADDED TO BLOCKCHAIN ...')
+		print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
+		print('**************************************')
+		# remove already mined transactions from local txn_memory_pool
+		self.remove_mined_transaction_from_memory_pool(mined_transactions=txn_dict)
+		response = full_node_pb2.block_broadcast_reply(message="broadcast received")
+		return response
+
+	def new_block_broadcast(self, request, context):
+		"""Receives new block broadcast.
+		Deletes any transaction in the working transaction pool
+		that is included in the new block.
+		"""
+		block_dict = json.loads(request.serialized_block)
+		hash_prev_block_header = block_dict['hash_prev_block_header']
+		txn_list = block_dict['transactions_list']
+		txn_dict = block_dict['transactions']	# key is the transaction_hash
+		new_block_transactions_list = []
+		for txn in txn_list:
+			if len(txn['list_of_inputs']) != 0:
+				# input list for creating Transaction() object.
+				input_list = [Output(
+					value=txn['list_of_inputs'][0]['value'],
+					index=txn['list_of_inputs'][0]['index'],
+					script=txn['list_of_inputs'][0]['script'],
+				)]
+			else:
+				# coinbase transaction does not have any input
+				input_list = []
+			# output list for creating Transaction() object.
+			output_list = [Output(
+				value=txn['list_of_outputs'][0]['value'],
+				index=txn['list_of_outputs'][0]['index'],
+				script=txn['list_of_outputs'][0]['script'],
+			)]
+			# instantiate Transaction() object
+			transaction = Transaction(input_list, output_list)
+			# add Transaction() object to the new block's transaction list
+			new_block_transactions_list.append(transaction)
+		# instantiate new Block() object using the new block's transaction list created above.
+		new_block = Block(hash_prev_block_header, new_block_transactions_list)
+		# add new block to local BlockChain() object.
+		self.blockchain.add_block(new_block)
+		print('**************************************')
+		print('... NEW BLOCK RECEIVED ...')
+		print('... NEW BLOCK ADDED TO BLOCKCHAIN ...')
+		print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
+		print('**************************************')
+		# remove already mined transactions from local txn_memory_pool
+		self.remove_mined_transaction_from_memory_pool(mined_transactions=txn_dict)
+		# after a new block is published and added to the blockchain,
+		# each miner sleeps between 0-3 seconds
+		sleep_interval = random.randint(0, 3)
+		print(f"... After adding new block from other nodes, sleep for: {sleep_interval} seconds ...")
+		time.sleep(sleep_interval)
+		
+		response = full_node_pb2.block_broadcast_reply(message="broadcast received")
+		return response
+
+	def remove_mined_transaction_from_memory_pool(self, mined_transactions):
+		"""	Scan local transaction memory pool and if there is a 
+		transaction that has already been included in the new block,
+		remove that transaction from the local transaction memory pool.
+		"""
+		for txn_in_local_pool in self.txn_pool.list:
+			if txn_in_local_pool.transaction_hash in mined_transactions:
+				self.txn_pool.list.remove(txn_in_local_pool)
+				print(f'Removing transaction from memory pool: {txn_in_local_pool.transaction_hash}')
+		print('\n**************************************')
+		print('Local transaction memory pool updated.')
+		print('**************************************\n')
+
+	def start_mining(self, working_memory_pool):
+		"""Start mining a new block with the transactions
+		in the working memory pool.
+		"""
+		# get previous block to get the block hash value
+		previous_block = self.blockchain.get_most_recent_block()
+		# mine new block
+		# total_mining_fee includes coinbase_reward and the sum of all transaction fees
+		new_block, total_mining_fee = self.miner.mine_new_block(
+			previous_block, working_memory_pool
+		)
+		# Only add the newly mined block if the prev_block_hash value matches,
+		# otherwise, start mining for a new block again.
+		# The infinite while-loop in "mine_and_broadcast_new_block()" method
+		# will automatically start mining a new block.
+		if self.blockchain.get_most_recent_block().block_hash() == new_block.hash_prev_block_header:
+			# add new block to blockchain of the node
+			self.blockchain.add_block(new_block)
+			# broadcast new block to other peers in the network
+			self.broadcast_block(new_block)
+			print('================================')
+			print('... NEW BLOCK MINED ...')
+			print('... ADDING NEW BLOCK TO BLOCKCHAIN ...')
+			print('... BROADCASTING NEW BLOCK TO OTHER NODES ...')
+			print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
+			print(f'MagicCoin Rewarded (Reward + Transaction Fees): {total_mining_fee} quidditch')
+			print('================================')
+			
+
+	def mine_and_broadcast_new_block(self):
+		"""Constantly mines new blocks and broadcasts them
+		to other nodes in the network.
+		"""
+		while True:
+			# working memory pool for transactions to be included in the new block
+			new_block_txn_list = []	
+			if self.txn_pool.size() <= 0:
+				# if there are no transactions, do not mine for new block.
+				pass
+			elif self.txn_pool.size() <= (Block.MAX_TXNS - 1):
+				# if there are less number of txn left than MAX_TXNS
+            	# create new block with the remaining txns.
+				for i in range(self.txn_pool.size()):
+					txn = self.txn_pool.get_transaction()
+					new_block_txn_list.append(txn)
+				self.start_mining(working_memory_pool=new_block_txn_list)
+			else:
+				# create new block by consuming transactions from
+            	# the txn_memory_pool
+				for i in range(Block.MAX_TXNS - 1):
+					txn = self.txn_pool.get_transaction()
+					new_block_txn_list.append(txn)
+				self.start_mining(working_memory_pool=new_block_txn_list)
+
+
+def current_time():
+	return time.time()
+
+def get_ip():
+	"""Returns IP address of client node.
+
+	reference: https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+	"""
+	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+	try:
+		s.connect(('10.255.255.255', 1))
+		IP = s.getsockname()[0]
+	except:
+		IP = '127.0.0.1'
+	finally:
+		s.close()
+	return IP
+
+def run():
+	"""Run Full Node service.
+		- listens to port 12345 for incoming handshakes and broadcasts
+		- broadcasts new transactions that are generated via multithreading
+		- broadcasts new blocks that are mined via multithreading
+
+	"""
+	full_node = FullNode()
+	print(f"\nFull Node IP Address: {get_ip()}\n")
+	
+	"""
+	1) listen to port 12345 for incoming handshakes and broadcasts
+	"""
+	server = grpc.server(futures.ThreadPoolExecutor(max_workers=10))
+	full_node_pb2_grpc.add_FullNodeServicer_to_server(full_node, server)
+	server.add_insecure_port('[::]:12345')
+	server.start()
+
+	"""
+	2) Register with DNS_SEED server and receive a null response or
+	a single ip address of the latest registered node in the network.
+	
+	If the response is an ip address, initiate handshake with that node.
+	"""
+	with grpc.insecure_channel('dns_seed:50051') as channel:
+		stub = registrar_pb2_grpc.RegistrarStub(channel)
+		# registration response can be null or single ip address)
+		response = stub.register(
+			registrar_pb2.reg_request(nVersion=1, nTime=current_time(),	addrMe=get_ip())
+			)
+	# if the dns_seed server returns 'null' for ip address
+	if len(response.message) == 0:
+		print("Latest registered node IP address: null\n")
+	# if the dns_seed server returns a valid ip address of the latest registered node
+	else:
+		print("Latest registered node IP address: " + response.message[0])
+		if response.message[0] not in full_node.known_peers_list:
+			full_node.known_peers_list.append(response.message[0])
+		# request handshake to the latest registered node
+		hs_response = full_node.request_handshake(response.message[0])
+		# request handshake to newly known peers
+		for ip_addr in hs_response:
+			if ip_addr not in full_node.known_peers_list and ip_addr != get_ip():
+				full_node.known_peers_list.append(ip_addr)
+				full_node.request_handshake(ip_addr)
+	
+	"""
+	3) Generate transactions and broadcast them to other peers in the network.
+	"""
+	print('... BEGIN GENERATING AND BROADCASTING TRANSACTIONS ...')
+	txn_broadcast = threading.Thread(target=full_node.generate_and_broadcast_txn)
+	txn_broadcast.start()
+
+	"""
+	4) Mine new blocks and broadcast them to other peers in the network.
+	"""
+	print('... BEGIN MINING AND BROADCASTING NEW BLOCKS ...')
+	full_node.mine_and_broadcast_new_block()
+
+	"""
+	5) Press ctrl+c to stop the server.
+	"""
+	try:
+		while True:
+			time.sleep(_ONE_DAY_IN_SECONDS)
+	except KeyboardInterrupt:
+		server.stop(0)
+
+if __name__ == '__main__':
+	run()

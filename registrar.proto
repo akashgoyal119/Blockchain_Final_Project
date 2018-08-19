@@ -1,0 +1,19 @@
+syntax = "proto3";
+
+
+// The registrar service definition.
+service Registrar {
+  rpc register (reg_request) returns (reg_reply) {}
+}
+
+// The request message containing the registration info.
+message reg_request {
+  int32 nVersion = 1;
+  double nTime = 2;
+  string addrMe = 3;
+}
+
+// The response message containing the list of ip address
+message reg_reply {
+  repeated string message = 1;
+}
