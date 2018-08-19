@@ -100,7 +100,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		Note: This method is implemented with the purpose of
 		avoiding forks.
 		"""
-		serialized_block = json.dumps(block_to_send, default=lambda x: x.__dict__)
+		serialized_block = pickle.dumps(block_to_send)
 		with grpc.insecure_channel(receiving_node+':12345') as channel:
 			stub = full_node_pb2_grpc.FullNodeStub(channel)
 			existing_block = full_node_pb2.Block(serialized_block=serialized_block)
@@ -111,7 +111,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		"""Broadcasts newly mined block to other peers
 		in the network.
 		"""
-		serialized_block = json.dumps(new_block, default=lambda x: x.__dict__)
+		serialized_block = pickle.dumps(new_block)
 		for ip_addr in self.known_peers_list:
 			with grpc.insecure_channel(ip_addr+':12345') as channel:
 				stub = full_node_pb2_grpc.FullNodeStub(channel)
@@ -132,34 +132,8 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		so that newly joined nodes blockchain are the same length as the
 		the network's best blockchain.
 		"""
-		block_dict = json.loads(request.serialized_block)
-		hash_prev_block_header = block_dict['hash_prev_block_header']
-		txn_list = block_dict['transactions_list']
-		txn_dict = block_dict['transactions']	# key is the transaction_hash
-		new_block_transactions_list = []
-		for txn in txn_list:
-			if len(txn['list_of_inputs']) != 0:
-				# input list for creating Transaction() object.
-				input_list = [Output(
-					value=txn['list_of_inputs'][0]['value'],
-					index=txn['list_of_inputs'][0]['index'],
-					script=txn['list_of_inputs'][0]['script'],
-				)]
-			else:
-				# coinbase transaction does not have any input
-				input_list = []
-			# output list for creating Transaction() object.
-			output_list = [Output(
-				value=txn['list_of_outputs'][0]['value'],
-				index=txn['list_of_outputs'][0]['index'],
-				script=txn['list_of_outputs'][0]['script'],
-			)]
-			# instantiate Transaction() object
-			transaction = Transaction(input_list, output_list)
-			# add Transaction() object to the new block's transaction list
-			new_block_transactions_list.append(transaction)
 		# instantiate new Block() object using the new block's transaction list created above.
-		new_block = Block(hash_prev_block_header, new_block_transactions_list)
+		new_block = pickle.loads(request.serialized_block)
 		# add new block to local BlockChain() object.
 		self.blockchain.add_block(new_block)
 		print('**************************************')
@@ -177,34 +151,8 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		Deletes any transaction in the working transaction pool
 		that is included in the new block.
 		"""
-		block_dict = json.loads(request.serialized_block)
-		hash_prev_block_header = block_dict['hash_prev_block_header']
-		txn_list = block_dict['transactions_list']
-		txn_dict = block_dict['transactions']	# key is the transaction_hash
-		new_block_transactions_list = []
-		for txn in txn_list:
-			if len(txn['list_of_inputs']) != 0:
-				# input list for creating Transaction() object.
-				input_list = [Output(
-					value=txn['list_of_inputs'][0]['value'],
-					index=txn['list_of_inputs'][0]['index'],
-					script=txn['list_of_inputs'][0]['script'],
-				)]
-			else:
-				# coinbase transaction does not have any input
-				input_list = []
-			# output list for creating Transaction() object.
-			output_list = [Output(
-				value=txn['list_of_outputs'][0]['value'],
-				index=txn['list_of_outputs'][0]['index'],
-				script=txn['list_of_outputs'][0]['script'],
-			)]
-			# instantiate Transaction() object
-			transaction = Transaction(input_list, output_list)
-			# add Transaction() object to the new block's transaction list
-			new_block_transactions_list.append(transaction)
 		# instantiate new Block() object using the new block's transaction list created above.
-		new_block = Block(hash_prev_block_header, new_block_transactions_list)
+		new_block = pickle.loads(request.serialized_block)
 		# add new block to local BlockChain() object.
 		self.blockchain.add_block(new_block)
 		print('**************************************')
@@ -228,9 +176,9 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		transaction that has already been included in the new block,
 		remove that transaction from the local transaction memory pool.
 		"""
-		for txn_in_local_pool in self.txn_pool.list:
+		for txn_in_local_pool in self.txn_pool.valid_list:
 			if txn_in_local_pool.transaction_hash in mined_transactions:
-				self.txn_pool.list.remove(txn_in_local_pool)
+				self.txn_pool.valid_list.remove(txn_in_local_pool)
 				print(f'Removing transaction from memory pool: {txn_in_local_pool.transaction_hash}')
 		print('\n**************************************')
 		print('Local transaction memory pool updated.')
@@ -272,13 +220,13 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		while True:
 			# working memory pool for transactions to be included in the new block
 			new_block_txn_list = []	
-			if self.txn_pool.size() <= 0:
+			if len(self.txn_pool.valid_list) <= 0:
 				# if there are no transactions, do not mine for new block.
 				pass
-			elif self.txn_pool.size() <= (Block.MAX_TXNS - 1):
+			elif len(self.txn_pool.valid_list) <= (Block.MAX_TXNS - 1):
 				# if there are less number of txn left than MAX_TXNS
             	# create new block with the remaining txns.
-				for i in range(self.txn_pool.size()):
+				for i in range(len(self.txn_pool.valid_list)):
 					txn = self.txn_pool.get_transaction()
 					new_block_txn_list.append(txn)
 				self.start_mining(working_memory_pool=new_block_txn_list)
@@ -349,6 +297,18 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 					contract = full_node_pb2.Contract(serialized_contract=serialized_contract,
 													broadcast_node=broadcast_node)
 					stub.new_contract_broadcast(contract)
+
+	def generate_and_broadcast_contract(self):
+		"""Constantly generates and broadcasts contracts
+		to other known peers in the network.
+		"""
+		while True:
+			time.sleep(random.randint(2, 5))
+			# generate contract
+			contract = self.generate_contract()
+			broadcasting_node = get_ip()	# broadcasting node's ip address
+			# broadcast new transaction to other peers in the network.
+			self.broadcast_contract(contract, broadcasting_node)
 
 
 
@@ -443,14 +403,6 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 
 
 
-
-
-
-
-
-
-
-
 def current_time():
 	return time.time()
 
@@ -471,7 +423,7 @@ def get_ip():
 
 def run():
 	"""Run Full Node service.
-		- listens to port 12345 for incoming handshakes and broadcasts
+		- listens to port 12345 for incoming handshakes, broadcasts, and contracts
 		- broadcasts new transactions that are generated via multithreading
 		- broadcasts new blocks that are mined via multithreading
 
@@ -516,20 +468,29 @@ def run():
 				full_node.request_handshake(ip_addr)
 	
 	"""
-	3) Generate transactions and broadcast them to other peers in the network.
+	3) Generate contracts and broadcast them to other peers in the network.
 	"""
-	print('... BEGIN GENERATING AND BROADCASTING TRANSACTIONS ...')
-	txn_broadcast = threading.Thread(target=full_node.generate_and_broadcast_txn)
-	txn_broadcast.start()
+	print('... BEGIN GENERATING AND BROADCASTING CONTRACTS ...')
+	contract_broadcast = threading.Thread(target=full_node.generate_and_broadcast_contract)
+	contract_broadcast.start()
 
 	"""
-	4) Mine new blocks and broadcast them to other peers in the network.
+	4) Generate 2 transactions per accepted contract and broadcast both transactions
+	to other peers in the network.
+	"""
+	print('... BEGIN GENERATING AND BROADCASTING TRANSACTIONS ...')
+	contract_txn = threading.Thread(target=full_node.generate_and_broadcast_txn)
+	contract_txn.start()
+
+
+	"""
+	5) Mine new blocks and broadcast them to other peers in the network.
 	"""
 	print('... BEGIN MINING AND BROADCASTING NEW BLOCKS ...')
 	full_node.mine_and_broadcast_new_block()
 
 	"""
-	5) Press ctrl+c to stop the server.
+	6) Press ctrl+c to stop the server.
 	"""
 	try:
 		while True:
