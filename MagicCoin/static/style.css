@@ -1,0 +1,13 @@
+h1 {
+    color: deepskyblue;
+}
+
+body {
+    margin: 100px;
+    line-height: 130%;
+    font-size: 16em;
+}
+
+table, th, td {
+    border: 1px solid black;
+}
