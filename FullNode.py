@@ -33,7 +33,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		self.blockchain = BlockChain(genesis_block)		# Initialize BlockChain with genesis_block
 		self.txn_pool = TxnMemoryPool(number_of_txn=0)	# Initialize empty txn pool
 		self.miner = Miner()	# Initialize miner
-		public_key = uuid.uuid4()
+		public_key = str(uuid.uuid4())
 		self.user = User(public_key=public_key)
 		self.contract_pool = ContractMemoryPool(number_of_contract=0)
 	
@@ -119,7 +119,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 				response = stub.new_block_broadcast(new_block)
 			print(f"Broadcasting New Block to: {ip_addr}")
 		# after publishing a new block to other known peers, sleep between 0-3 seconds
-		sleep_interval = random.randint(0, 3)
+		sleep_interval = random.uniform(2, 3)
 		print(f"... After broadcasting new block to other nodes, sleep for: {sleep_interval} seconds ...")
 		time.sleep(sleep_interval)
 
@@ -142,7 +142,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
 		print('**************************************')
 		# remove already mined transactions from local txn_memory_pool
-		self.remove_mined_transaction_from_memory_pool(mined_transactions=txn_dict)
+		self.remove_mined_transaction_from_memory_pool(mined_transactions=new_block.transactions)
 		response = full_node_pb2.block_broadcast_reply(message="broadcast received")
 		return response
 
@@ -161,10 +161,10 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
 		print('**************************************')
 		# remove already mined transactions from local txn_memory_pool
-		self.remove_mined_transaction_from_memory_pool(mined_transactions=txn_dict)
+		self.remove_mined_transaction_from_memory_pool(mined_transactions=new_block.transactions)
 		# after a new block is published and added to the blockchain,
 		# each miner sleeps between 0-3 seconds
-		sleep_interval = random.randint(0, 3)
+		sleep_interval = random.uniform(2, 3)
 		print(f"... After adding new block from other nodes, sleep for: {sleep_interval} seconds ...")
 		time.sleep(sleep_interval)
 		
@@ -172,9 +172,9 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		return response
 
 	def remove_mined_transaction_from_memory_pool(self, mined_transactions):
-		"""	Scan local transaction memory pool and if there is a 
+		"""	Scan local valid transaction memory pool and if there is a 
 		transaction that has already been included in the new block,
-		remove that transaction from the local transaction memory pool.
+		remove that transaction from the local valid transaction memory pool.
 		"""
 		for txn_in_local_pool in self.txn_pool.valid_list:
 			if txn_in_local_pool.transaction_hash in mined_transactions:
@@ -222,7 +222,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 			new_block_txn_list = []	
 			if len(self.txn_pool.valid_list) <= 0:
 				# if there are no transactions, do not mine for new block.
-				pass
+				continue
 			elif len(self.txn_pool.valid_list) <= (Block.MAX_TXNS - 1):
 				# if there are less number of txn left than MAX_TXNS
             	# create new block with the remaining txns.
@@ -254,7 +254,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		print('++++++++++++++++++++++++++++++++++++++++++++')
 		print('Generated contract:')
 		print(f'{contract.contract_hash_value}')
-		print(f'MEMORY POOL SIZE: {len(self.contract_pool.list)}')
+		print(f'CONTRACT MEMORY POOL SIZE: {len(self.contract_pool.list)}')
 		print('++++++++++++++++++++++++++++++++++++++++++++')
 		return contract
 
@@ -272,18 +272,18 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 					need_to_broadcast = False
 		except:
 			pass
-		if need_to_broadcast is True:
-			# if the received contract is new, add to the memory pool
-			# and also propagate the contract to other nodes.
-			self.contract_pool.add_contract(contract) # adding new received contract to memory pool
-			print('++++++++++++++++++++++++++++++++++++++++++++')
-			print('Adding Contract to Contract Memory Pool:')
-			print(f'{contract.contract_hash_value}')
-			print(f'CONTRACT MEMORY POOL SIZE: {len(self.contract_pool.list)}')
-			print('++++++++++++++++++++++++++++++++++++++++++++')
-			# propagate new received contract to other peers in the network.
-			# (excluding the node that generated and broadcasted the contract)
-			self.broadcast_contract(contract, broadcast_node)
+		# if need_to_broadcast is True:
+		# 	# if the received contract is new, add to the memory pool
+		# 	# and also propagate the contract to other nodes.
+		# 	self.contract_pool.add_contract(contract) # adding new received contract to memory pool
+		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
+		# 	print('Adding Contract to Contract Memory Pool:')
+		# 	print(f'{contract.contract_hash_value}')
+		# 	print(f'CONTRACT MEMORY POOL SIZE: {len(self.contract_pool.list)}')
+		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
+		# 	# propagate new received contract to other peers in the network.
+		# 	# (excluding the node that generated and broadcasted the contract)
+		# 	self.broadcast_contract(contract, broadcast_node)
 		response = full_node_pb2.contract_broadcast_reply(message="contract received")
 		return response
 
@@ -303,15 +303,12 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		to other known peers in the network.
 		"""
 		while True:
-			time.sleep(random.randint(2, 5))
+			time.sleep(random.uniform(2, 5))
 			# generate contract
 			contract = self.generate_contract()
 			broadcasting_node = get_ip()	# broadcasting node's ip address
 			# broadcast new transaction to other peers in the network.
 			self.broadcast_contract(contract, broadcasting_node)
-
-
-
 
 	def generate_transaction(self):
 		"""Generate two new transaction objects per contract.
@@ -322,6 +319,8 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		   from the transaction memory pool.
 		"""
 		contract = self.contract_pool.get_contract()
+		if contract is None:
+			return -1, -1
 		# user accepts bet and generates two transactions.
 		txn_1, txn_2 = self.user.accept_bet(contract)
 		# add to memory pool
@@ -371,18 +370,18 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 					need_to_broadcast = False
 		except:
 			pass
-		if need_to_broadcast is True:
-			# if the received transaction is new, add to the memory pool
-			# and also propagate the transaction to other nodes.
-			self.txn_pool.add_transaction(transaction) # adding new received transaction to memory pool
-			print('++++++++++++++++++++++++++++++++++++++++++++')
-			print('Adding Transaction to Transaction Memory Pool:')
-			print(f'{transaction.transaction_hash}')
-			print(f'MEMORY POOL SIZE: {len(self.txn_pool.list)}')
-			print('++++++++++++++++++++++++++++++++++++++++++++')
-			# propagate new received transaction to other peers in the network.
-			# (excluding the node that generated and broadcasted the transaction)
-			self.broadcast_transaction(transaction, broadcast_node)
+		# if need_to_broadcast is True:
+		# 	# if the received transaction is new, add to the memory pool
+		# 	# and also propagate the transaction to other nodes.
+		# 	self.txn_pool.add_transaction(transaction) # adding new received transaction to memory pool
+		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
+		# 	print('Adding Transaction to Transaction Memory Pool:')
+		# 	print(f'{transaction.transaction_hash}')
+		# 	print(f'TRANSACTION MEMORY POOL SIZE: {len(self.txn_pool.list)}')
+		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
+		# 	# propagate new received transaction to other peers in the network.
+		# 	# (excluding the node that generated and broadcasted the transaction)
+		# 	self.broadcast_transaction(transaction, broadcast_node)
 		response = full_node_pb2.txn_broadcast_reply(message="broadcast received")
 		return response
 	
@@ -393,10 +392,20 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		while True:
 			time.sleep(random.randint(2, 5))
 			# generate transaction
-			txn = self.generate_transaction()
+			txn1, txn2 = self.generate_transaction()
+			if txn1 == -1 and txn2 == -1:
+				continue
 			broadcasting_node = get_ip()	# broadcasting node's ip address
 			# broadcast new transaction to other peers in the network.
-			self.broadcast_transaction(txn, broadcasting_node)
+			self.broadcast_transaction(txn1, broadcasting_node)
+			self.broadcast_transaction(txn2, broadcasting_node)
+
+	def validate_transaction_add_to_valid_list(self):
+		while True:
+			for txn in self.txn_pool.list:
+				txn.validate_transaction()
+			self.txn_pool.update_valid_transaction_list()
+
 
 #################################################################
 #################################################################
@@ -482,12 +491,21 @@ def run():
 	txn_broadcast = threading.Thread(target=full_node.generate_and_broadcast_txn)
 	txn_broadcast.start()
 
+	"""
+	5) Validate transactions and add validated transactions to the 
+	valid transaction memory pool.
+	"""
+	print('... BEGIN ATTEMPTING TO RESOLVE OUTCOMES OF TRANSACTIONS ...')
+	
+	validate_txn = threading.Thread(target=full_node.validate_transaction_add_to_valid_list)
+	validate_txn.start()
 
 	"""
 	5) Mine new blocks and broadcast them to other peers in the network.
 	"""
 	print('... BEGIN MINING AND BROADCASTING NEW BLOCKS ...')
-	full_node.mine_and_broadcast_new_block()
+	mine_thread = threading.Thread(target=full_node.mine_and_broadcast_new_block)
+	mine_thread.start()
 
 	"""
 	6) Press ctrl+c to stop the server.

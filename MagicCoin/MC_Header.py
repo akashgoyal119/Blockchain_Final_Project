@@ -17,7 +17,7 @@ class Header:
     difficulty for lab 7 = 0x1e200000
     """
 
-    def __init__(self, hash_prev_block, hash_merkle_root, bits=0x207fffff, nonce=0, version_num=1):
+    def __init__(self, hash_prev_block, hash_merkle_root, bits=0x1e200000, nonce=0, version_num=1):
         """Initialize Header object.
 
         Note:
