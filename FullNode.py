@@ -20,7 +20,6 @@ from MagicCoin.MC_User import User
 import uuid
 
 
-
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
 
 
@@ -210,8 +209,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 			print('... BROADCASTING NEW BLOCK TO OTHER NODES ...')
 			print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
 			print(f'MagicCoin Rewarded (Reward + Transaction Fees): {total_mining_fee} quidditch')
-			print('================================')
-			
+			print('================================')	
 
 	def mine_and_broadcast_new_block(self):
 		"""Constantly mines new blocks and broadcasts them
@@ -237,13 +235,6 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 					txn = self.txn_pool.get_transaction()
 					new_block_txn_list.append(txn)
 				self.start_mining(working_memory_pool=new_block_txn_list)
-
-
-
-
-#################################################################
-#################################################################
-# CONTRACT
 
 	def generate_contract(self):
 		"""Generate new contract object.
@@ -272,18 +263,6 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 					need_to_broadcast = False
 		except:
 			pass
-		# if need_to_broadcast is True:
-		# 	# if the received contract is new, add to the memory pool
-		# 	# and also propagate the contract to other nodes.
-		# 	self.contract_pool.add_contract(contract) # adding new received contract to memory pool
-		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
-		# 	print('Adding Contract to Contract Memory Pool:')
-		# 	print(f'{contract.contract_hash_value}')
-		# 	print(f'CONTRACT MEMORY POOL SIZE: {len(self.contract_pool.list)}')
-		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
-		# 	# propagate new received contract to other peers in the network.
-		# 	# (excluding the node that generated and broadcasted the contract)
-		# 	self.broadcast_contract(contract, broadcast_node)
 		response = full_node_pb2.contract_broadcast_reply(message="contract received")
 		return response
 
@@ -370,18 +349,6 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 					need_to_broadcast = False
 		except:
 			pass
-		# if need_to_broadcast is True:
-		# 	# if the received transaction is new, add to the memory pool
-		# 	# and also propagate the transaction to other nodes.
-		# 	self.txn_pool.add_transaction(transaction) # adding new received transaction to memory pool
-		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
-		# 	print('Adding Transaction to Transaction Memory Pool:')
-		# 	print(f'{transaction.transaction_hash}')
-		# 	print(f'TRANSACTION MEMORY POOL SIZE: {len(self.txn_pool.list)}')
-		# 	print('++++++++++++++++++++++++++++++++++++++++++++')
-		# 	# propagate new received transaction to other peers in the network.
-		# 	# (excluding the node that generated and broadcasted the transaction)
-		# 	self.broadcast_transaction(transaction, broadcast_node)
 		response = full_node_pb2.txn_broadcast_reply(message="broadcast received")
 		return response
 	
@@ -405,11 +372,6 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 			for txn in self.txn_pool.list:
 				txn.validate_transaction()
 			self.txn_pool.update_valid_transaction_list()
-
-
-#################################################################
-#################################################################
-
 
 
 def current_time():
@@ -496,7 +458,6 @@ def run():
 	valid transaction memory pool.
 	"""
 	print('... BEGIN ATTEMPTING TO RESOLVE OUTCOMES OF TRANSACTIONS ...')
-	
 	validate_txn = threading.Thread(target=full_node.validate_transaction_add_to_valid_list)
 	validate_txn.start()
 
