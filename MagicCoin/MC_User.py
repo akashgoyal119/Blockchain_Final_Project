@@ -17,7 +17,8 @@ class User:
     def generate_contract(self, event='Cubs vs Cardinals', team='Cubs', quantity=1000,
                         expiration_date = time.time() + 10, odds = 1 , source_of_truth = 'www.espn.com',
                         check_result_time = time.time() + 100):
-
+        """Generate mock contract to simulate mining.
+        """
         dig_sig = sha256((self.public_key + str(time.time())).encode('utf-8')).hexdigest()
         contract = Contract(event, team, quantity, expiration_date, odds, source_of_truth, check_result_time,
                             self.public_key, dig_sig)

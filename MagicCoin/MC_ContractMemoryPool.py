@@ -3,6 +3,7 @@
 
 from MagicCoin.MC_Contract import Contract
 from MagicCoin.MC_User import User
+import uuid
 
 
 class ContractMemoryPool:
@@ -27,7 +28,9 @@ class ContractMemoryPool:
         """Fill the contract memory pool with randomly
         generated contract objects.
         """
-        user = User(public_key='111222333444555666777')
+        # generate random public key.
+        public_key = str(uuid.uuid4())
+        user = User(public_key=public_key)
         contract_list = []
         for i in range(number_of_contract):
             contract_list.append(user.generate_contract())

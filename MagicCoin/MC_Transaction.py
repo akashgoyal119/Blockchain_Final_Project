@@ -75,7 +75,6 @@ class Transaction:
         output_value += total_transaction_fee
         public_key = 'CONGRATS YOU WON THE COINBASE REWARD!!!'
         digtal_sig = Output.generate_random_script()
-
         input_value = Output.generate_random_value(1, 1000000)
         list_of_inputs = Output.generate_output(input_value)
 
@@ -90,3 +89,13 @@ class Transaction:
             transaction_fee += txn_in.value - txn_out.value
         return transaction_fee
 
+    def __repr__(self):
+        """Representation of Transaction object.
+        """
+        rep = '\n======= PRINT TRANSACTION =======\n'
+        rep += f'input: {self.input}\n'
+        rep += f'output: {self.output}\n'
+        rep += f'is_valid: {self.is_valid}\n'
+        rep += f'contract: {self.contract}\n'
+        rep += '======= END OF TRANSACTION =======\n'
+        return rep

@@ -25,6 +25,7 @@ def main():
     
     genesis_block = Block.generate_genesis_block()
     print(genesis_block)
+    print(txn_memory_pool.list)
 
 
 if __name__ == '__main__':
