@@ -25,7 +25,7 @@ class Transaction:
         else:
             # we should probably actually implement a better version of this later...
             if not self.is_valid:
-                self.is_valid = random.randint(0, 1)
+                self.is_valid = 1 if int(self.contract.created_time) % 2 == 0 else 0
 
     @property
     # the odds should be implemented as a float, so for example, a bet of $10 with odds 0.5 implies that

@@ -63,7 +63,12 @@ class ContractMemoryPool:
             return 'Type Error: Must add contract object.'
 
     def get_contract_by_hash(self, contract_hash):
+        temp_contract_pool = []
+        res = "Contract does not exist."
         for contract in self.list:
             if contract.contract_hash_value == contract_hash:
-                return contract
-        return "Contract does not exist."
+                res = contract
+            else:
+                temp_contract_pool.append(contract)
+        self.list = temp_contract_pool
+        return res

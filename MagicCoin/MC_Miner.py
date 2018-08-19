@@ -52,11 +52,11 @@ class Miner:
         # convert hex into int
         # reference: https://stackoverflow.com/questions/209513/convert-hex-string-to-int-in-python
         while int(new_block_header.hash_block_header(), 16) > target:
-            print('Unsuccessful...')
-            print(f'Nonce: {new_block_header.nonce}')
-            print('Guess : %064x' % (int(new_block_header.hash_block_header(), 16)))
-            print('Target: %064x' % target)
-            print('')
+            # print('Unsuccessful...')
+            # print(f'Nonce: {new_block_header.nonce}')
+            # print('Guess : %064x' % (int(new_block_header.hash_block_header(), 16)))
+            # print('Target: %064x' % target)
+            # print('')
             #increment nonce by 1 until success
             new_block_header.nonce += 1
         print('--------------------------------')

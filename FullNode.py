@@ -1,7 +1,7 @@
 from __future__ import print_function
 from concurrent import futures
 import grpc, socket, time, random, threading
-import json
+import json, pickle
 
 import registrar_pb2
 import registrar_pb2_grpc
@@ -14,6 +14,11 @@ from MagicCoin.MC_Miner import Miner
 from MagicCoin.MC_Output import Output
 from MagicCoin.MC_Transaction import Transaction
 from MagicCoin.MC_TxnMemoryPool import TxnMemoryPool
+from MagicCoin.MC_Contract import Contract
+from MagicCoin.MC_ContractMemoryPool import ContractMemoryPool
+from MagicCoin.MC_User import User
+import uuid
+
 
 
 _ONE_DAY_IN_SECONDS = 60 * 60 * 24
@@ -28,6 +33,9 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		self.blockchain = BlockChain(genesis_block)		# Initialize BlockChain with genesis_block
 		self.txn_pool = TxnMemoryPool(number_of_txn=0)	# Initialize empty txn pool
 		self.miner = Miner()	# Initialize miner
+		public_key = uuid.uuid4()
+		self.user = User(public_key=public_key)
+		self.contract_pool = ContractMemoryPool(number_of_contract=0)
 	
 	def handshake(self, request, context):
 		"""Receives handshake request from a newly joined node
@@ -84,101 +92,6 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		#print(f"Current Node's list of known nodes: {'  '.join(self.handshaken_peers_list)}\n")
 		print(f"Current Node's list of known nodes: {'  '.join(self.known_peers_list)}\n")
 		return hs_response.message
-
-	def generate_transaction(self):
-		"""Generate new transaction object.
-		"""
-		transaction = Transaction.generate_transaction()
-		# add to memory pool
-		self.txn_pool.add_transaction(transaction)
-		print('++++++++++++++++++++++++++++++++++++++++++++')
-		print('Generated transaction:')
-		print(f'{transaction.transaction_hash}')
-		print(f'MEMORY POOL SIZE: {len(self.txn_pool.list)}')
-		print('++++++++++++++++++++++++++++++++++++++++++++')
-		return transaction
-
-	def broadcast_transaction(self, transaction, broadcast_node):
-		"""Broadcast newly generated transaction.
-		"""
-		serialized_txn = json.dumps(transaction, default=lambda x: x.__dict__)
-		for ip_addr in self.known_peers_list:
-			if ip_addr != broadcast_node:
-				print(f'Broadcasting transaction to: {ip_addr}')
-				with grpc.insecure_channel(ip_addr+':12345') as channel:
-					stub = full_node_pb2_grpc.FullNodeStub(channel)
-					txn = full_node_pb2.Transaction(serialized_transaction=serialized_txn,
-													broadcast_node=broadcast_node)
-					stub.new_transaction_broadcast(txn)
-	
-	def new_transaction_broadcast(self, request, context):
-		"""Receives new transaction from other nodes and if the transaction is
-		new to the receiving node, the transaction is also broadcasted
-		to the remaining nodes in the network.
-		
-		Note: If the received transaction is new to the node, add to memory pool and
-		broadcast that transaction to other nodes, excluding the node that
-		broadcasted the said transaction.
-
-		self.receiver_public_key = receiver_public_key
-        self.receiver_digital_sig = receiver_digital_sig
-        self.sender_digital_sig = sender_digital_sig
-        self.sender_public_key = sender_public_key
-        self.is_valid = None
-        self.contract = contract
-
-		def __init__(self, event, team, quantity, expiration_date, odds, 
-                source_of_truth, check_result_time, public_key, digital_sig):
-		"""
-		txn_dict = json.loads(request.serialized_transaction)
-		
-		receiver_public_key = txn_dict['receiver_public_key']
-		receiver_digital_sig = txn_dict['receiver_digital_sig']
-		sender_digital_sig = txn_dict['sender_digital_sig']
-		sender_public_key = txn_dict['sender_public_key']
-		is_valid = txn_dict['is_valid']
-		
-		
-
-		broadcast_node = request.broadcast_node
-		# instantiate transaction object
-		transaction = Transaction(input_list, output_list)
-		print(f'Received transaction from: {broadcast_node}')
-		need_to_broadcast = True
-		# if the received transaction already exists in the memory pool, do nothing
-		try:
-			for txn in self.txn_pool.list:
-				if transaction.transaction_hash == txn.transaction_hash:
-					print(f'Transaction already exists in memory pool: {transaction.transaction_hash}')
-					need_to_broadcast = False
-		except:
-			pass
-		if need_to_broadcast is True:
-			# if the received transaction is new, add to the memory pool
-			# and also propagate the transaction to other nodes.
-			self.txn_pool.add_transaction(transaction) # adding new received transaction to memory pool
-			print('++++++++++++++++++++++++++++++++++++++++++++')
-			print('Adding Transaction to Transaction Memory Pool:')
-			print(f'{transaction.transaction_hash}')
-			print(f'MEMORY POOL SIZE: {len(self.txn_pool.list)}')
-			print('++++++++++++++++++++++++++++++++++++++++++++')
-			# propagate new received transaction to other peers in the network.
-			# (excluding the node that generated and broadcasted the transaction)
-			self.broadcast_transaction(transaction, broadcast_node)
-		response = full_node_pb2.txn_broadcast_reply(message="broadcast received")
-		return response
-	
-	def generate_and_broadcast_txn(self):
-		"""Constantly generates and broadcasts transactions
-		to other known peers in the network.
-		"""
-		while True:
-			time.sleep(random.randint(2, 5))
-			# generate transaction
-			txn = self.generate_transaction()
-			broadcasting_node = get_ip()	# broadcasting node's ip address
-			# broadcast new transaction to other peers in the network.
-			self.broadcast_transaction(txn, broadcasting_node)
 
 	def send_block_to_node(self, block_to_send, receiving_node, block_height):
 		"""Sends blocks to the newly joined node if that node
@@ -376,6 +289,166 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 					txn = self.txn_pool.get_transaction()
 					new_block_txn_list.append(txn)
 				self.start_mining(working_memory_pool=new_block_txn_list)
+
+
+
+
+#################################################################
+#################################################################
+# CONTRACT
+
+	def generate_contract(self):
+		"""Generate new contract object.
+		"""
+		contract = self.user.generate_random_contract()
+		# add to memory pool
+		self.contract_pool.add_contract(contract)
+		print('++++++++++++++++++++++++++++++++++++++++++++')
+		print('Generated contract:')
+		print(f'{contract.contract_hash_value}')
+		print(f'MEMORY POOL SIZE: {len(self.contract_pool.list)}')
+		print('++++++++++++++++++++++++++++++++++++++++++++')
+		return contract
+
+	def new_contract_broadcast(self, request, context):
+		broadcast_node = request.broadcast_node
+		# instantiate Contract object
+		contract = pickle.loads(request.serialized_contract)
+		print(f'Received contract from: {broadcast_node}')
+		need_to_broadcast = True
+		# if the received contract already exists in the memory pool, do nothing
+		try:
+			for c in self.contract_pool.list:
+				if contract.contract_hash_value == c.contract_hash_value:
+					print(f'Contract already exists in memory pool: {contract.contract_hash_value}')
+					need_to_broadcast = False
+		except:
+			pass
+		if need_to_broadcast is True:
+			# if the received contract is new, add to the memory pool
+			# and also propagate the contract to other nodes.
+			self.contract_pool.add_contract(contract) # adding new received contract to memory pool
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			print('Adding Contract to Contract Memory Pool:')
+			print(f'{contract.contract_hash_value}')
+			print(f'CONTRACT MEMORY POOL SIZE: {len(self.contract_pool.list)}')
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			# propagate new received contract to other peers in the network.
+			# (excluding the node that generated and broadcasted the contract)
+			self.broadcast_contract(contract, broadcast_node)
+		response = full_node_pb2.contract_broadcast_reply(message="contract received")
+		return response
+
+	def broadcast_contract(self, contract, broadcast_node):
+		serialized_contract = pickle.dumps(contract)
+		for ip_addr in self.known_peers_list:
+			if ip_addr != broadcast_node:
+				print(f'Broadcasting contract to: {ip_addr}')
+				with grpc.insecure_channel(ip_addr+':12345') as channel:
+					stub = full_node_pb2_grpc.FullNodeStub(channel)
+					contract = full_node_pb2.Contract(serialized_contract=serialized_contract,
+													broadcast_node=broadcast_node)
+					stub.new_contract_broadcast(contract)
+
+
+
+
+	def generate_transaction(self):
+		"""Generate two new transaction objects per contract.
+
+		   Only one out of the two transactions will be validated
+		   as True (1).
+		   The other transaction deemed as False (0) will be deleted
+		   from the transaction memory pool.
+		"""
+		contract = self.contract_pool.get_contract()
+		# user accepts bet and generates two transactions.
+		txn_1, txn_2 = self.user.accept_bet(contract)
+		# add to memory pool
+		self.txn_pool.add_transaction(txn_1)
+		self.txn_pool.add_transaction(txn_2)
+		print('++++++++++++++++++++++++++++++++++++++++++++')
+		print('Generated transactions:')
+		print(f'{txn_1.transaction_hash}')
+		print(f'{txn_2.transaction_hash}')
+		print(f'TRANSACTION MEMORY POOL SIZE: {len(self.txn_pool.list)}')
+		print('++++++++++++++++++++++++++++++++++++++++++++')
+		return txn_1, txn_2
+
+	def broadcast_transaction(self, transaction, broadcast_node):
+		"""Broadcast newly generated transaction.
+		"""
+		serialized_txn = pickle.dumps(transaction)
+		for ip_addr in self.known_peers_list:
+			if ip_addr != broadcast_node:
+				print(f'Broadcasting transaction to: {ip_addr}')
+				with grpc.insecure_channel(ip_addr+':12345') as channel:
+					stub = full_node_pb2_grpc.FullNodeStub(channel)
+					txn = full_node_pb2.Transaction(serialized_transaction=serialized_txn,
+													broadcast_node=broadcast_node)
+					stub.new_transaction_broadcast(txn)
+	
+	def new_transaction_broadcast(self, request, context):
+		"""Receives new transaction from other nodes and if the transaction is
+		new to the receiving node, the transaction is also broadcasted
+		to the remaining nodes in the network.
+		
+		Note: If the received transaction is new to the node, add to memory pool and
+		broadcast that transaction to other nodes, excluding the node that
+		broadcasted the said transaction.
+		"""
+		# ip address of the node that first broadcasted the transaction.
+		broadcast_node = request.broadcast_node
+		# instantiate transaction object
+		transaction = pickle.loads(request.serialized_transaction)
+		print(f'Received transaction from: {broadcast_node}')
+		need_to_broadcast = True
+		# if the received transaction already exists in the memory pool, do nothing
+		try:
+			for txn in self.txn_pool.list:
+				if transaction.transaction_hash == txn.transaction_hash:
+					print(f'Transaction already exists in memory pool: {transaction.transaction_hash}')
+					need_to_broadcast = False
+		except:
+			pass
+		if need_to_broadcast is True:
+			# if the received transaction is new, add to the memory pool
+			# and also propagate the transaction to other nodes.
+			self.txn_pool.add_transaction(transaction) # adding new received transaction to memory pool
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			print('Adding Transaction to Transaction Memory Pool:')
+			print(f'{transaction.transaction_hash}')
+			print(f'MEMORY POOL SIZE: {len(self.txn_pool.list)}')
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			# propagate new received transaction to other peers in the network.
+			# (excluding the node that generated and broadcasted the transaction)
+			self.broadcast_transaction(transaction, broadcast_node)
+		response = full_node_pb2.txn_broadcast_reply(message="broadcast received")
+		return response
+	
+	def generate_and_broadcast_txn(self):
+		"""Constantly generates and broadcasts transactions
+		to other known peers in the network.
+		"""
+		while True:
+			time.sleep(random.randint(2, 5))
+			# generate transaction
+			txn = self.generate_transaction()
+			broadcasting_node = get_ip()	# broadcasting node's ip address
+			# broadcast new transaction to other peers in the network.
+			self.broadcast_transaction(txn, broadcasting_node)
+
+#################################################################
+#################################################################
+
+
+
+
+
+
+
+
+
 
 
 def current_time():

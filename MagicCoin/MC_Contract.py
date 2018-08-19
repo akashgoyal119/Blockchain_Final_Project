@@ -19,7 +19,7 @@ class Contract:
         self.check_result_time = check_result_time
         self.party1_public_key = public_key
         self.party1_digital_sig = digital_sig
-        self.created_time = str(time.time()) 
+        self.created_time = time.time()
     
     @property
     def contract_hash_value(self):

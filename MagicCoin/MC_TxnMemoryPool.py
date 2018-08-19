@@ -27,9 +27,15 @@ class TxnMemoryPool:
         self.valid_list = []
 
     def update_valid_transaction_list(self):
+        temp_txn_list = []
         for txn in self.list:
             if txn.is_valid == 1:
                 self.valid_list.append(txn)
+            elif txn.is_valid == 0:
+                pass
+            else: # unresolved case 
+                temp_txn_list.append(txn)
+        self.list = temp_txn_list
 
     def fill_txn_memory_pool(self, number_of_txn):
         """Fill the transaction memory pool with randomly

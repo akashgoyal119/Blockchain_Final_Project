@@ -36,8 +36,9 @@ class User:
         # will need to figure out method to broadcast this after creation
         return contract
 
-    def accept_bet(self, contract_hash_value, contract_memory_pool, txn_memory_pool):
-        contract = contract_memory_pool.get_contract_by_hash(contract_hash_value)
+    def accept_bet(self, contract):
+        #contract = contract_memory_pool.get_contract_by_hash(contract_hash_value)
+        
         dig_sig2 = sha256((self.public_key + str(time.time())).encode('utf-8')).hexdigest()
 
         #  txn :   def __init__(self, input, output, contract):
@@ -67,9 +68,7 @@ class User:
                           digital_sig=contract.party1_digital_sig)
 
         txn_2 = Transaction(input_2, output_2, contract)
-
-        txn_memory_pool.add_transaction(txn_1)
-        txn_memory_pool.add_transaction(txn_2)
+        return txn_1, txn_2
 
 
         # TODO: need to broadcast
