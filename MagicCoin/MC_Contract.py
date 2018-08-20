@@ -1,15 +1,13 @@
-# MPCS 56600 - Introduction to Blockchain
-# Team project
-
 import time
 from hashlib import sha256
 
 
 class Contract:
+    """Class representing Contract (bets made by users on a sports game).
+    """
 
     def __init__(self, event, team, quantity, expiration_date, odds,
                  source_of_truth, check_result_time, public_key, digital_sig=''):
-                
         self.event = event
         self.team = team
         self.quantity = int(quantity)
@@ -23,6 +21,8 @@ class Contract:
     
     @property
     def contract_hash_value(self):
+        """Compute contract hash value.
+        """
         joint = self.event + self.team + str(self.quantity) + str(self.expiration_date) + \
                 str(self.odds) + self.source_of_truth + str(self.check_result_time) + \
                 self.party1_public_key + self.party1_digital_sig + str(self.created_time)

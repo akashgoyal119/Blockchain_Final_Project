@@ -1,10 +1,3 @@
-# MPCS 56600 - Introduction to Blockchain
-# Jae-Yeun Hwang
-
-# Lab 5
-# Problem 1
-
-
 from MagicCoin.MC_Block import Block
 
 

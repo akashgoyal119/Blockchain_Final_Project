@@ -17,7 +17,7 @@ class Registrar(registrar_pb2_grpc.RegistrarServicer):
 
 	def register(self, request, context):
 		"""Returns null or single ip address
-		of the latest registered node.
+		   of the latest registered node.
 		"""
 		print(f'Registration request received from node: {request.addrMe}')
 		if len(self.ip_addr_list) != 0:

@@ -1,6 +1,3 @@
-# MPCS 56600 - Introduction to Blockchain
-
-
 from MagicCoin.MC_Block import Block
 from MagicCoin.MC_Header import Header
 from MagicCoin.MC_Transaction import Transaction
@@ -23,17 +20,16 @@ class Miner:
         value <<= 8 * (shift - 3)
         return value
 
-    def mine_new_block(self, prev_block, new_block_txn_list):
+    def mine_new_block(self, prev_block, new_block_txn_list, blockchain_height):
         """Mines new block.
 
-        Args:
-            hash_prev_block_header: hash value of previous block header
+           hash_prev_block_header: hash value of previous block header
         """
         total_txn_fee = 0
         for txn in new_block_txn_list:
             total_txn_fee += txn.transaction_fee()
         print('================================')
-        print('Mining New Block')
+        print('Mining For New Block')
         print('================================')
         # generate coinbase_transaction
         coinbase_txn = Transaction.generate_coinbase_transaction(total_txn_fee)
@@ -65,14 +61,14 @@ class Miner:
         print('Guess : %064x' % (int(new_block_header.hash_block_header(), 16)))
         print('Target: %064x' % target)
         print('--------------------------------')
-
         new_block_header = Header(hash_prev_block_header, merkle_root, nonce=new_block_header.nonce)
         new_block.block_header = new_block_header
+        new_block.block_number = blockchain_height+1
         return new_block, total_txn_fee
 
     def mine_blockchain(self, blockchain, txn_memory_pool):
         """Recursively mines new blocks and adds them to
-        the existing blockchain (or to the genesis block).
+           the existing blockchain (or to the genesis block).
         """
         new_block_txn_list = []
         if txn_memory_pool.size() <= 0:
@@ -83,15 +79,13 @@ class Miner:
             # create new block with the remaining txns.
             for i in range(txn_memory_pool.size()):
                 txn = txn_memory_pool.get_transaction()
-
                 # if transaction is_valid field is true, add to the working memory pool
                 if txn.is_valid == 1:
                     new_block_txn_list.append(txn)
-
             # get prev_block to get the hash value
             prev_block = blockchain.get_most_recent_block()
             # mine new block
-            new_block, total_txn_fee = self.mine_new_block(prev_block, new_block_txn_list)
+            new_block, total_txn_fee = self.mine_new_block(prev_block, new_block_txn_list, blockchain.height())
             # add new block to blockchain
             blockchain.add_block(new_block)
             print('New Block added !!!\n')
@@ -108,10 +102,9 @@ class Miner:
                 # if transaction is_valid field is true, add to the working memory pool
                 if txn.is_valid == 1:
                     new_block_txn_list.append(txn)
-
             # get prev_block to get the hash value
             prev_block = blockchain.get_most_recent_block()
-            new_block, total_txn_fee = self.mine_new_block(prev_block, new_block_txn_list)
+            new_block, total_txn_fee = self.mine_new_block(prev_block, new_block_txn_list, blockchain.height())
             blockchain.add_block(new_block)
             print('New Block added !!!\n')
             print(f'BlockChain height: {blockchain.height()}')

@@ -4,11 +4,12 @@ import json
 from MagicCoin.MC_Output import Output
 from MagicCoin.MC_Contract import Contract
 from hashlib import sha256
-import time
 
 
 class Transaction:
-
+    """Class representing Transaction in MagicCoin.
+    """
+    # avg_transaction_fee per transaction
     avg_transaction_fee = int(50)
     # coinbase reward is 50 MagicCoins
     coinbase_reward = int(50000)
@@ -20,12 +21,32 @@ class Transaction:
         self.contract = contract
 
     def validate_transaction(self):
+        """After each contract's check_result_time, which is the
+           time when the outcome of the contract (bet) is determined,
+           only one of the two transactions created per contract will
+           be validated (is_valid = 1) and will be added to the 
+           valid transaction memory pool, which will eventually be
+           mined into blockchain.
+
+           The other transaction that has 'is_valid = 0' will be deleted
+           from the transaction memory pool
+        """
         if time.time() < self.contract.check_result_time:
             return None
         else:
-            # we should probably actually implement a better version of this later...
-            if not self.is_valid:
-                self.is_valid = 1 if int(self.contract.created_time) % 2 == 0 else 0
+            if self.is_valid is None:
+                # Fake criteria for transaction validation for simulation purposes.
+                # The fake criteria must be deterministic since each node must evaluate the
+                # same transactions as valid.
+                # In real life, the "is_valid" field will be determined by the outcome
+                # of the actual sports game or bet.
+                if self.input.value == self.contract.quantity:
+                    self.is_valid = 1
+                    print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                    print(f'Transaction validated: {self.transaction_hash}')
+                    print('$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$$')
+                else:
+                    self.is_valid = 0
 
     @property
     # the odds should be implemented as a float, so for example, a bet of $10 with odds 0.5 implies that
@@ -40,35 +61,18 @@ class Transaction:
     
     @property
     def transaction_hash(self):
-
         serialize_input = json.dumps(self.input, default=lambda x: x.__dict__)
         serialize_output = json.dumps(self.output, default=lambda x: x.__dict__)
         string = serialize_input + serialize_output + self.contract.contract_hash_value
-
         return sha256(string.encode('utf-8')).hexdigest()
-
-    # @classmethod
-    # def generate_transaction(cls):
-    #     """Generate Transaction object with random
-    #     value and script.
-    #     """
-    #     # random value between 1 - 1000 MagicCoin
-    #     input_value = Output.generate_random_value(1, 1000000)
-    #     # transaction fee is on avg 50 quidditch for MagicCoin
-    #     # randomize transaction fee to simulate real life transaction fees
-    #     txn_fee = int(cls.avg_transaction_fee*2*random.random())
-    #     output_value = input_value - txn_fee
-    #     list_of_inputs = Output.generate_output(input_value)
-    #     list_of_outputs = Output.generate_output(output_value)
-    #     return cls(list_of_inputs, list_of_outputs, )
 
     @classmethod
     def generate_coinbase_transaction(cls, total_transaction_fee):
         """Generate coinbase Transaction object that includes the
-        reward for the miner.
+           reward for the miner.
 
-        transaction_list: list of Transaction obj to be included
-        in the new block
+           transaction_list: list of Transaction obj to be included
+           in the new block
         """
         input_value = 0
         input_obj = Output.generate_output(input_value)
@@ -80,10 +84,8 @@ class Transaction:
         public_key = 'CONGRATS YOU WON THE COINBASE REWARD!!!'
         digtal_sig = input_obj.digital_sig
         output_obj = Output(output_value, public_key, digtal_sig)
-
         coinbase_contract = Contract('Coinbase Contract','Coinbase',output_value,'Coinbase',1,'Coinbase',
-                    'Coinbase','Coinbase','Coinbase')
-                    
+                    'Coinbase','Coinbase','Coinbase') 
         return cls(input_obj, output_obj, coinbase_contract)
 
     def transaction_fee(self):

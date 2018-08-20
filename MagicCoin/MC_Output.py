@@ -1,9 +1,3 @@
-# MPCS 56600 - Introduction to Blockchain
-# Jae-Yeun Hwang
-
-# Lab 5
-# Problem 1
-
 import random, string
 
 
@@ -30,7 +24,7 @@ class Output:
     @staticmethod
     def generate_random_value(l_bound, u_bound):
         """Returns random value in 'quidditch', which is the
-        smallest unit for MagicCoin.
+           smallest unit for MagicCoin.
         """
         return int(random.randint(l_bound, u_bound))
 

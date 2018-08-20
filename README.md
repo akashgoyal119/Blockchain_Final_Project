@@ -103,37 +103,38 @@ b) Each of the node that joins the network initiates handshake with every other
 
 c) When a node joins the network, it receives the missing blocks of the 
    blockchain from the latest-registered node. This ensures that the blockchain
-   become eventually consistent for all of the nodes in the network. In order to 
-   ensure the consistency of the blockchains in each of the mining node, I added 
-   an extra protocol that calls the method "existing_block_broadcast()".
+   become eventually consistent for all of the nodes in the network.
 
-d) Each contract (or bet) is generated when two users agree upon a bet, and
+d) New blocks are only allowed to be added to the BlockChain only if the
+   previous header hash values are equivalent.
+
+e) Each contract (or bet) is generated when two users agree upon a bet, and
    every contract that is generated is propagated throughout the network.
 
-e) Each contract generates two transactions, one transaction going to the
+f) Each contract generates two transactions, one transaction going to the
    poster and the other transaction going from the poster. Both of these 
    transactions are propagated throughout the network and saved in each node's
    transaction memory pool.
 
-f) After a contract's result has been verified (after a contract's check_result_time),
+g) After a contract's result has been verified (after a contract's check_result_time),
    only one of the two transactions will be deemed as valid and that contract will be
    added to the "valid transaction memory pool". Only the transactions in the
    "valid transaction memory pool" will be added to the blocks that are being mined.
 
-g) When a node receives a transaction from another node, if the transaction 
+h) When a node receives a transaction from another node, if the transaction 
    already exists in the node's transaction memory pool, the node discards 
    the transaction. But if the transaction new to the receiving node, then 
    the node adds the transaction to its memory pool and also broadcasts 
    the said transaction to other nodes, excluding the node that broadcasted
    the transaction, so that the transaction can propagate throughout the network.
 
-h) When a node mines a new block, it broadcasts it to every other node in the network.
+i) When a node mines a new block, it broadcasts it to every other node in the network.
 
-i) When a node receives a new block, it matches the block_hash value and adds
+j) When a node receives a new block, it matches the block_hash value and adds
    the block to the blockchain.
 
-j) When a node receives a new block and adds it to its blockchain while mining
+k) When a node receives a new block and adds it to its blockchain while mining
    its own separate block, the node will immediately start mining a new block again.
 
-k) When a node receives a new block and adds it to its blockchain, all the valid transactions 
+l) When a node receives a new block and adds it to its blockchain, all the valid transactions 
    that was included in the new block will be removed from the node's local "valid transaction memory pool".

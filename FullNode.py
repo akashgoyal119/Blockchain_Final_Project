@@ -38,12 +38,12 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 	
 	def handshake(self, request, context):
 		"""Receives handshake request from a newly joined node
-		and returns ip addresses of all known nodes.
-		If the handshake calling node is new to the receiving node, the
-		receiving node will initiate handshake with that node.
-		
-		Note: This algorithm allows each node to shake hands with 
-		all the other nodes in the network exactly once.
+		   and returns ip addresses of all known nodes.
+		   
+		   If the handshake calling node is new to the receiving node, the
+		   receiving node will initiate handshake with that node.
+		   This algorithm allows each node to shake hands with 
+		   all the other nodes in the network exactly once.
 		"""
 		print('\nHandshake RECEIVED from         : ' + request.addrMe)
 		# only add new ip address
@@ -73,8 +73,8 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 
 	def request_handshake(self, ip_addr):
 		"""Requests handshake to ip_addr and
-		returns list of known ip address from the
-		handshake receiving node.
+		   returns list of known ip address from the
+		   handshake receiving node.
 		"""
 		self.handshaken_peers_list.append(ip_addr)
 		print("\nRequesting handshake to node: " + ip_addr)
@@ -94,10 +94,10 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 
 	def send_block_to_node(self, block_to_send, receiving_node, block_height):
 		"""Sends blocks to the newly joined node if that node
-		has incomplete blockchain.
+		   has incomplete blockchain.
 
-		Note: This method is implemented with the purpose of
-		avoiding forks.
+		   This method is implemented with the purpose of
+		   avoiding forks.
 		"""
 		serialized_block = pickle.dumps(block_to_send)
 		with grpc.insecure_channel(receiving_node+':12345') as channel:
@@ -108,7 +108,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 	
 	def broadcast_block(self, new_block):
 		"""Broadcasts newly mined block to other peers
-		in the network.
+		   in the network.
 		"""
 		serialized_block = pickle.dumps(new_block)
 		for ip_addr in self.known_peers_list:
@@ -124,22 +124,31 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 
 	def existing_block_broadcast(self, request, context):
 		"""Receives blocks from other nodes and locally builds
-		the node's blockchain.
+		   the node's blockchain.
 
-		Note: This method ensures the consistency of the blockchain
-		by receiving existing blocks to the newly joined node's blockchain
-		so that newly joined nodes blockchain are the same length as the
-		the network's best blockchain.
+		   This method ensures the consistency of the blockchain
+		   by receiving existing blocks to the newly joined node's blockchain
+		   so that newly joined nodes blockchain are the same length as the
+		   the network's best blockchain.
 		"""
 		# instantiate new Block() object using the new block's transaction list created above.
 		new_block = pickle.loads(request.serialized_block)
-		# add new block to local BlockChain() object.
-		self.blockchain.add_block(new_block)
-		print('**************************************')
-		print('... EXISTING BLOCK RECEIVED ...')
-		print('... EXISTING BLOCK ADDED TO BLOCKCHAIN ...')
-		print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
-		print('**************************************')
+		# add new block by comparing previous block header hash value
+		# also add the block to the blockchain if it is the block right after the genesis block.
+		if self.blockchain.get_most_recent_block().block_hash() == new_block.hash_prev_block_header or new_block.block_number == 1:
+			# add new block to local blockchain of the node
+			self.blockchain.add_block(new_block)
+			print('**************************************')
+			print('... EXISTING BLOCK RECEIVED ...')
+			print('... EXISTING BLOCK ADDED TO BLOCKCHAIN ...')
+			print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
+			print('**************************************')
+		else:
+			# if node cannot add new block reconfigure and start node again.
+			print('================================')
+			print('... CANNOT ADD BLOCK TO BLOCKCHAIN ...')
+			print('... START NODE AGAIN ...')
+			print('================================')
 		# remove already mined transactions from local txn_memory_pool
 		self.remove_mined_transaction_from_memory_pool(mined_transactions=new_block.transactions)
 		response = full_node_pb2.block_broadcast_reply(message="broadcast received")
@@ -147,52 +156,64 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 
 	def new_block_broadcast(self, request, context):
 		"""Receives new block broadcast.
-		Deletes any transaction in the working transaction pool
-		that is included in the new block.
+		   
+		   Deletes any transaction in the working transaction pool
+		   that is included in the new block.
 		"""
 		# instantiate new Block() object using the new block's transaction list created above.
 		new_block = pickle.loads(request.serialized_block)
-		# add new block to local BlockChain() object.
-		self.blockchain.add_block(new_block)
-		print('**************************************')
-		print('... NEW BLOCK RECEIVED ...')
-		print('... NEW BLOCK ADDED TO BLOCKCHAIN ...')
-		print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
-		print('**************************************')
-		# remove already mined transactions from local txn_memory_pool
-		self.remove_mined_transaction_from_memory_pool(mined_transactions=new_block.transactions)
-		# after a new block is published and added to the blockchain,
-		# each miner sleeps between 0-3 seconds
-		sleep_interval = random.uniform(2, 3)
-		print(f"... After adding new block from other nodes, sleep for: {sleep_interval} seconds ...")
-		time.sleep(sleep_interval)
-		
+		# add new block to blockchain by comparing previous block header hash value
+		if self.blockchain.get_most_recent_block().block_hash() == new_block.hash_prev_block_header:
+			# add new block to local blockchain of the node
+			self.blockchain.add_block(new_block)
+			print('**************************************')
+			print('... NEW BLOCK RECEIVED ...')
+			print('... NEW BLOCK ADDED TO BLOCKCHAIN ...')
+			print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
+			print('**************************************')
+			# remove already mined transactions from local txn_memory_pool
+			self.remove_mined_transaction_from_memory_pool(mined_transactions=new_block.transactions)
+			# after a new block is published and added to the blockchain,
+			# each miner sleeps between 0-3 seconds
+			sleep_interval = random.uniform(2, 3)
+			print(f"... After adding new block from other nodes, sleep for: {sleep_interval} seconds ...")
+			time.sleep(sleep_interval)
+		else:
+			# cannot add new block if the node received a new block
+			# from another node.
+			print('================================')
+			print('... CANNOT ADD BLOCK TO BLOCKCHAIN ...')
+			print('... BEGIN MINING FOR NEW BLOCK ...')
+			print('================================')	
 		response = full_node_pb2.block_broadcast_reply(message="broadcast received")
 		return response
 
 	def remove_mined_transaction_from_memory_pool(self, mined_transactions):
 		"""	Scan local valid transaction memory pool and if there is a 
-		transaction that has already been included in the new block,
-		remove that transaction from the local valid transaction memory pool.
+		    transaction that has already been included in the new block,
+		    remove that transaction from the local valid transaction memory pool.
 		"""
+		temp_valid_list = []
 		for txn_in_local_pool in self.txn_pool.valid_list:
 			if txn_in_local_pool.transaction_hash in mined_transactions:
-				self.txn_pool.valid_list.remove(txn_in_local_pool)
 				print(f'Removing transaction from memory pool: {txn_in_local_pool.transaction_hash}')
-		print('\n**************************************')
+			else:
+				temp_valid_list.append(txn_in_local_pool)
+		self.txn_pool.valid_list = temp_valid_list
+		print('**************************************')
 		print('Local transaction memory pool updated.')
-		print('**************************************\n')
+		print('**************************************')
 
 	def start_mining(self, working_memory_pool):
 		"""Start mining a new block with the transactions
-		in the working memory pool.
+		   in the working memory pool.
 		"""
 		# get previous block to get the block hash value
 		previous_block = self.blockchain.get_most_recent_block()
 		# mine new block
 		# total_mining_fee includes coinbase_reward and the sum of all transaction fees
 		new_block, total_mining_fee = self.miner.mine_new_block(
-			previous_block, working_memory_pool
+			previous_block, working_memory_pool, self.blockchain.height()
 		)
 		# Only add the newly mined block if the prev_block_hash value matches,
 		# otherwise, start mining for a new block again.
@@ -201,19 +222,25 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		if self.blockchain.get_most_recent_block().block_hash() == new_block.hash_prev_block_header:
 			# add new block to blockchain of the node
 			self.blockchain.add_block(new_block)
-			# broadcast new block to other peers in the network
-			self.broadcast_block(new_block)
 			print('================================')
-			print('... NEW BLOCK MINED ...')
 			print('... ADDING NEW BLOCK TO BLOCKCHAIN ...')
 			print('... BROADCASTING NEW BLOCK TO OTHER NODES ...')
 			print(f'BLOCKCHAIN HEIGHT: {self.blockchain.height()}')
 			print(f'MagicCoin Rewarded (Reward + Transaction Fees): {total_mining_fee} quidditch')
-			print('================================')	
+			print('================================')
+			# broadcast new block to other peers in the network
+			self.broadcast_block(new_block)
+		else:
+			# cannot add new block if the node received a new block
+			# from another node.
+			print('================================')
+			print('... CANNOT ADD BLOCK TO BLOCKCHAIN ...')
+			print('... BEGIN MINING FOR NEW BLOCK ...')
+			print('================================')
 
 	def mine_and_broadcast_new_block(self):
 		"""Constantly mines new blocks and broadcasts them
-		to other nodes in the network.
+		   to other nodes in the network.
 		"""
 		while True:
 			# working memory pool for transactions to be included in the new block
@@ -237,7 +264,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 				self.start_mining(working_memory_pool=new_block_txn_list)
 
 	def generate_contract(self):
-		"""Generate new contract object.
+		"""Generate new random contract object.
 		"""
 		contract = self.user.generate_random_contract()
 		# add to memory pool
@@ -250,23 +277,38 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		return contract
 
 	def new_contract_broadcast(self, request, context):
+		"""Receives new contract generated by other nodes and adds the
+		   said contract to the local contract memory pool if it does
+		   not already exist in the pool.
+		"""
 		broadcast_node = request.broadcast_node
 		# instantiate Contract object
 		contract = pickle.loads(request.serialized_contract)
 		print(f'Received contract from: {broadcast_node}')
-		need_to_broadcast = True
+		need_to_add = True
 		# if the received contract already exists in the memory pool, do nothing
 		try:
 			for c in self.contract_pool.list:
 				if contract.contract_hash_value == c.contract_hash_value:
 					print(f'Contract already exists in memory pool: {contract.contract_hash_value}')
-					need_to_broadcast = False
+					need_to_add = False
 		except:
 			pass
+		if need_to_add is True:
+			# if the received contract is new, add to the memory pool
+			self.contract_pool.add_contract(contract) # adding new received contract to memory pool
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			print('Adding Received Contract to Contract Memory Pool:')
+			print(f'{contract.contract_hash_value}')
+			print(f'CONTRACT MEMORY POOL SIZE: {len(self.contract_pool.list)}')
+			print('++++++++++++++++++++++++++++++++++++++++++++')
 		response = full_node_pb2.contract_broadcast_reply(message="contract received")
 		return response
 
 	def broadcast_contract(self, contract, broadcast_node):
+		"""Serializes contract object and broadcasts them to 
+		   other nodes in the network.
+		"""
 		serialized_contract = pickle.dumps(contract)
 		for ip_addr in self.known_peers_list:
 			if ip_addr != broadcast_node:
@@ -279,7 +321,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 
 	def generate_and_broadcast_contract(self):
 		"""Constantly generates and broadcasts contracts
-		to other known peers in the network.
+		   to other known peers in the network.
 		"""
 		while True:
 			time.sleep(random.uniform(2, 5))
@@ -298,6 +340,7 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 		   from the transaction memory pool.
 		"""
 		contract = self.contract_pool.get_contract()
+		# if contract pool is empty return -1
 		if contract is None:
 			return -1, -1
 		# user accepts bet and generates two transactions.
@@ -328,37 +371,44 @@ class FullNode(full_node_pb2_grpc.FullNodeServicer):
 	
 	def new_transaction_broadcast(self, request, context):
 		"""Receives new transaction from other nodes and if the transaction is
-		new to the receiving node, the transaction is also broadcasted
-		to the remaining nodes in the network.
+		   new to the receiving node, the transaction is also broadcasted
+		   to the remaining nodes in the network.
 		
-		Note: If the received transaction is new to the node, add to memory pool and
-		broadcast that transaction to other nodes, excluding the node that
-		broadcasted the said transaction.
+		   If the received transaction is new to the node, add to memory pool.
 		"""
 		# ip address of the node that first broadcasted the transaction.
 		broadcast_node = request.broadcast_node
 		# instantiate transaction object
 		transaction = pickle.loads(request.serialized_transaction)
 		print(f'Received transaction from: {broadcast_node}')
-		need_to_broadcast = True
+		need_to_add = True
 		# if the received transaction already exists in the memory pool, do nothing
 		try:
 			for txn in self.txn_pool.list:
 				if transaction.transaction_hash == txn.transaction_hash:
 					print(f'Transaction already exists in memory pool: {transaction.transaction_hash}')
-					need_to_broadcast = False
+					need_to_add = False
 		except:
 			pass
+		if need_to_add is True:
+			# if the received transaction is new, add to the memory pool
+			self.txn_pool.add_transaction(transaction) # adding new received transaction to memory pool
+			print('++++++++++++++++++++++++++++++++++++++++++++')
+			print('Adding Received Transaction to Transaction Memory Pool:')
+			print(f'{transaction.transaction_hash}')
+			print(f'TRANSACTION MEMORY POOL SIZE: {len(self.txn_pool.list)}')
+			print('++++++++++++++++++++++++++++++++++++++++++++')
 		response = full_node_pb2.txn_broadcast_reply(message="broadcast received")
 		return response
 	
 	def generate_and_broadcast_txn(self):
 		"""Constantly generates and broadcasts transactions
-		to other known peers in the network.
+		   to other known peers in the network.
 		"""
 		while True:
 			time.sleep(random.randint(2, 5))
-			# generate transaction
+			# pull contract from contract pool and
+			# generate 2 transactions for each contract.
 			txn1, txn2 = self.generate_transaction()
 			if txn1 == -1 and txn2 == -1:
 				continue
@@ -380,7 +430,7 @@ def current_time():
 def get_ip():
 	"""Returns IP address of client node.
 
-	reference: https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
+	   reference: https://stackoverflow.com/questions/166506/finding-local-ip-addresses-using-pythons-stdlib
 	"""
 	s = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 	try:
@@ -397,7 +447,6 @@ def run():
 		- listens to port 12345 for incoming handshakes, broadcasts, and contracts
 		- broadcasts new transactions that are generated via multithreading
 		- broadcasts new blocks that are mined via multithreading
-
 	"""
 	full_node = FullNode()
 	print(f"\nFull Node IP Address: {get_ip()}\n")
@@ -412,9 +461,9 @@ def run():
 
 	"""
 	2) Register with DNS_SEED server and receive a null response or
-	a single ip address of the latest registered node in the network.
+	   a single ip address of the latest registered node in the network.
 	
-	If the response is an ip address, initiate handshake with that node.
+	   If the response is an ip address, initiate handshake with that node.
 	"""
 	with grpc.insecure_channel('dns_seed:50051') as channel:
 		stub = registrar_pb2_grpc.RegistrarStub(channel)
@@ -447,7 +496,7 @@ def run():
 
 	"""
 	4) Generate 2 transactions per accepted contract and broadcast both transactions
-	to other peers in the network.
+	   to other peers in the network.
 	"""
 	print('... BEGIN GENERATING AND BROADCASTING TRANSACTIONS ...')
 	txn_broadcast = threading.Thread(target=full_node.generate_and_broadcast_txn)
@@ -455,7 +504,7 @@ def run():
 
 	"""
 	5) Validate transactions and add validated transactions to the 
-	valid transaction memory pool.
+	   valid transaction memory pool.
 	"""
 	print('... BEGIN ATTEMPTING TO RESOLVE OUTCOMES OF TRANSACTIONS ...')
 	validate_txn = threading.Thread(target=full_node.validate_transaction_add_to_valid_list)

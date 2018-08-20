@@ -1,20 +1,17 @@
-# MPCS 56600 - Introduction to Blockchain
-
-
 from MagicCoin.MC_Contract import Contract
 from MagicCoin.MC_User import User
 import uuid
 
 
 class ContractMemoryPool:
-    """Class representing Contract Memory Pool in
+    """Class representing Contract Memory Pool.
     """
 
     def __init__(self, number_of_contract):
         """Initialize ContractMemoryPool object.
         
-        Note: Default number of contract is 91 as given in the
-        instructions.
+           Default number of contract is 91 as given in the
+           instructions.
         """
         try:
             assert(type(number_of_contract) is int)
@@ -23,10 +20,9 @@ class ContractMemoryPool:
             print('Error: number_of_contract must be in int.')
             raise
 
-
     def fill_contract_memory_pool(self, number_of_contract):
         """Fill the contract memory pool with randomly
-        generated contract objects.
+           generated contract objects.
         """
         # generate random public key.
         public_key = str(uuid.uuid4())
@@ -63,6 +59,8 @@ class ContractMemoryPool:
             return 'Type Error: Must add contract object.'
 
     def get_contract_by_hash(self, contract_hash):
+        """Get contract by hash_value
+        """
         temp_contract_pool = []
         res = "Contract does not exist."
         for contract in self.list:

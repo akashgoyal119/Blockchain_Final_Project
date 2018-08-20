@@ -1,10 +1,3 @@
-# MPCS 56600 - Introduction to Blockchain
-# Jae-Yeun Hwang
-
-# Lab 5
-# Problem 1
-
-
 from MagicCoin.MC_Transaction import Transaction
 
 
@@ -15,8 +8,8 @@ class TxnMemoryPool:
     def __init__(self, number_of_txn=0):
         """Initialize TxnMemoryPool object.
         
-        Note: Default number of transactions is 91 as given in the
-        instructions.
+           Default number of transactions is 91 as given in the
+           instructions.
         """
         try:
             assert(type(number_of_txn) is int)
@@ -39,7 +32,7 @@ class TxnMemoryPool:
 
     def fill_txn_memory_pool(self, number_of_txn):
         """Fill the transaction memory pool with randomly
-        generated Transaction objects.
+           generated Transaction objects.
         """
         transaction_list = []
         for i in range(number_of_txn):

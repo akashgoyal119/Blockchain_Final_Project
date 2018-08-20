@@ -1,10 +1,3 @@
-# MPCS 56600 - Introduction to Blockchain
-# Jae-Yeun Hwang
-
-# Lab 5
-# Problem 1
-
-
 from hashlib import sha256
 from binascii import unhexlify, hexlify
 from MagicCoin.MC_Transaction import Transaction
@@ -25,11 +18,10 @@ class Block:
     def __init__(self, hash_prev_block_header, transactions, magic_number=0xD9B4BEF9):
         """Initialize Block object.
 
-        Note:
-            - transactions is a list of Transaction obj.
-            - magic_number is constant.
-            - hash_prev_block_header is needed to initialize Header object.
-            - transactions is used to compute Merkle Root.
+            transactions is a list of Transaction obj.
+            magic_number is constant.
+            hash_prev_block_header is needed to initialize Header object.
+            transactions is used to compute Merkle Root.
         """
         self.magic_number = magic_number
         # reference: https://stackoverflow.com/questions/449560/how-do-i-determine-the-size-of-an-object-in-python
@@ -40,8 +32,8 @@ class Block:
         self.hash_prev_block_header = hash_prev_block_header
         # initialize Header object
         self.block_header = Header(self.hash_prev_block_header, self.merkle_root())
-
         self.txids_list = [t.transaction_hash for t in self.transactions_list]
+        self.block_number = 0
 
     def block_hash(self):
         """Compute block hash.
@@ -59,8 +51,7 @@ class Block:
         return transactions_dic
 
     def compute_depth(self, num_nodes, depth=0):
-        """From Lab 3:
-        Recursively computes and returns the depth of Merkle Tree.
+        """Recursively computes and returns the depth of Merkle Tree.
         """
         if num_nodes == 0 or num_nodes == 1:
             return 0
@@ -78,8 +69,7 @@ class Block:
                 return self.compute_depth(num_nodes, depth)
 
     def reverse_hash_value(self, hash_value):
-        """From Lab 3:
-        Reverse hash value.
+        """Reverse hash value.
         """
         b_array = bytearray(hash_value)
         b_array.reverse()
@@ -87,8 +77,7 @@ class Block:
         return reversed_hex
     
     def hash_two_value(self, value1, value2):
-        """From Lab 3:
-        Returns sha256 hash value of two input value.
+        """Returns sha256 hash value of two input value.
         """
         reversed_1 = self.reverse_hash_value(unhexlify(value1))
         reversed_2 = self.reverse_hash_value(unhexlify(value2))
@@ -99,8 +88,7 @@ class Block:
         return hash_value
     
     def merkle_root(self):
-        """From Lab 3:
-        Compute merkle root.
+        """Compute merkle root.
         """
         txids_list = [t.transaction_hash for t in self.transactions_list]
         num_nodes = len(txids_list)
@@ -141,23 +129,23 @@ class Block:
 
     @classmethod
     def generate_genesis_block(cls):
-        # value_in = 1000000000
-        # value_out = value_in - 50
-        # script_in = "This is the Genesis Block"
-        # script_out = "Welcome to MagicCoin !!!"
-        # input_list = [Output(value_in, 0, script_in)]
-        # output_list = [Output(value_out, 0, script_out)]
-        # genesis_txn = [Transaction(input_list, output_list)]
-        # return cls('0'*64, genesis_txn)
-        first_user = User('1111111')
-        genesis_contract = first_user.generate_random_contract()
-        #jesus_christ.accept_bet(genesis_contract)
-
-        # genesis_block transaction.
-        input_1 = Output(value=100000,
+        """Generate genesis block for the blockchain in MagicCoin.
+        """
+        first_user = User('Harry Potter')
+        #genesis_contract = first_user.generate_random_contract()
+        event = "Gryffindor vs Slytherin"
+        team = "Gryffindor"
+        quantity = 100000
+        expiration_date = '0'
+        odds = 0.1
+        source_of_truth = "Albus Dumbledore"
+        check_result_time = '10'
+        genesis_contract = Contract(event, team, quantity, expiration_date, odds, source_of_truth, check_result_time,
+                            first_user.public_key)
+        input_1 = Output(value=genesis_contract.quantity,
                          public_address=genesis_contract.party1_public_key,
                          digital_sig=genesis_contract.party1_digital_sig)
-        output_1 = Output(value=100000-50,
+        output_1 = Output(value=genesis_contract.quantity-50,
                            public_address=genesis_contract.party1_public_key,
                            digital_sig=genesis_contract.party1_digital_sig)
         genesis_transaction = [Transaction(input_1, output_1, genesis_contract)]
