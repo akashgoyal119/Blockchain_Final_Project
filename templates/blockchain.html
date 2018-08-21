@@ -1,0 +1,28 @@
+<!doctype html>
+    <body>
+      <h1> Welcome to the World's Greatest Sports Investing Blockchain Application. </h1>
+      <h2> Below are all the blocks on the blockchain </h2>
+
+      <ol>
+        {% for block in bc.blocks %}
+          <li> Block </li>
+                <ul>
+                    <li> Number of transactions: {{ block.transaction_counter }} </li>
+                    <li> Merkel Root: {{ block.block_header.hash_merkle_root }} </li>
+                    <li> Nonce: {{ block.block_header.nonce }} </li>
+                    <li> Timestamp: {{ block.block_header.timestamp|strftime }} </li>
+                    <li> Previous Block Header Hash: {{ block.block_header.hash_prev_block_header }} </li>
+                    <li> Transaction hashes:
+                        <ul>
+                            {% for txn in block.transactions_list %}
+                                <li><a href="{{ url_for('get_transaction_details',txn=txn) }}"> {{ txn.transaction_hash }}</a></li>
+                            {% endfor %}
+                        </ul>
+                    </li>
+                </ul>
+        {% endfor %}
+      </ol>
+
+    </body>
+
+     <p> <a href="{{ url_for('index') }}">Return to home screen</a></p>

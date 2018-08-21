@@ -30,7 +30,7 @@ class Contract:
 
     def __repr__(self):
         created_time = str(time.strftime('%Y-%m-%d %H:%M:%S',
-                                        time.localtime(self.created_date)))
+                                        time.localtime(self.created_time)))
         expiration_time = str(time.strftime('%Y-%m-%d %H:%M:%S',
                                         time.localtime(self.expiration_date)))
         check_result_time = str(time.strftime('%Y-%m-%d %H:%M:%S',
@@ -41,7 +41,7 @@ class Contract:
         rep += f'Quantity: {self.quantity}\n'
         rep += f'Odds: {self.odds}\n'
         rep += f'Source of Truth: {self.source_of_truth}\n'
-        rep += f'Created Time: {created_date}'
+        rep += f'Created Time: {created_time}\n'
         rep += f'Expiration Time: {expiration_time}\n'
         rep += f'Check Result Time: {check_result_time}\n'
         rep += f'Contract Hash: {self.contract_hash_value}\n'

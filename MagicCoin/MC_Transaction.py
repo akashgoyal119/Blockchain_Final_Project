@@ -84,8 +84,8 @@ class Transaction:
         public_key = 'CONGRATS YOU WON THE COINBASE REWARD!!!'
         digtal_sig = input_obj.digital_sig
         output_obj = Output(output_value, public_key, digtal_sig)
-        coinbase_contract = Contract('Coinbase Contract','Coinbase',output_value,'Coinbase',1,'Coinbase',
-                    'Coinbase','Coinbase','Coinbase') 
+        coinbase_contract = Contract('Coinbase Contract','Coinbase',output_value,int(time.time()),1,'Coinbase',
+                    int(time.time()),'Coinbase','Coinbase') 
         return cls(input_obj, output_obj, coinbase_contract)
 
     def transaction_fee(self):

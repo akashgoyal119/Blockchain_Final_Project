@@ -1,0 +1,32 @@
+syntax = "proto3";
+
+service SendInfo {
+    rpc ContractDisplay (ContractRequest) returns (ContractReply) {}
+    rpc TransactionCreation (TransactionRequest) returns (TransactionReply) {}
+    rpc ContractCreation (ContractCreationRequest) returns (ContractCreationReply) {}
+}
+
+
+message ContractRequest {
+    string message = 1;
+}
+
+message ContractReply {
+    repeated string contracts = 1;
+}
+
+message TransactionRequest {
+    string txn_hash = 1;
+}
+
+message TransactionReply {
+    string message = 1;
+}
+
+message ContractCreationRequest {
+    string contract = 1; 
+}
+
+message ContractCreationReply {
+    string message = 1;
+}

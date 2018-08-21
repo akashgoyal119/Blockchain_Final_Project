@@ -39,16 +39,6 @@ class FullNodeStub(object):
         request_serializer=full__node__pb2.Contract.SerializeToString,
         response_deserializer=full__node__pb2.contract_broadcast_reply.FromString,
         )
-    self.show_all_existing_contracts = channel.unary_unary(
-        '/FullNode/show_all_existing_contracts',
-        request_serializer=full__node__pb2.ExistingContractRequest.SerializeToString,
-        response_deserializer=full__node__pb2.ExistingContractReply.FromString,
-        )
-    self.display_full_blockchain = channel.unary_unary(
-        '/FullNode/display_full_blockchain',
-        request_serializer=full__node__pb2.BlockchainRequest.SerializeToString,
-        response_deserializer=full__node__pb2.BlockchainReply.FromString,
-        )
 
 
 class FullNodeServicer(object):
@@ -90,20 +80,6 @@ class FullNodeServicer(object):
     context.set_details('Method not implemented!')
     raise NotImplementedError('Method not implemented!')
 
-  def show_all_existing_contracts(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
-  def display_full_blockchain(self, request, context):
-    # missing associated documentation comment in .proto file
-    pass
-    context.set_code(grpc.StatusCode.UNIMPLEMENTED)
-    context.set_details('Method not implemented!')
-    raise NotImplementedError('Method not implemented!')
-
 
 def add_FullNodeServicer_to_server(servicer, server):
   rpc_method_handlers = {
@@ -131,16 +107,6 @@ def add_FullNodeServicer_to_server(servicer, server):
           servicer.new_contract_broadcast,
           request_deserializer=full__node__pb2.Contract.FromString,
           response_serializer=full__node__pb2.contract_broadcast_reply.SerializeToString,
-      ),
-      'show_all_existing_contracts': grpc.unary_unary_rpc_method_handler(
-          servicer.show_all_existing_contracts,
-          request_deserializer=full__node__pb2.ExistingContractRequest.FromString,
-          response_serializer=full__node__pb2.ExistingContractReply.SerializeToString,
-      ),
-      'display_full_blockchain': grpc.unary_unary_rpc_method_handler(
-          servicer.display_full_blockchain,
-          request_deserializer=full__node__pb2.BlockchainRequest.FromString,
-          response_serializer=full__node__pb2.BlockchainReply.SerializeToString,
       ),
   }
   generic_handler = grpc.method_handlers_generic_handler(

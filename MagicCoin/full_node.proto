@@ -8,10 +8,7 @@ service FullNode {
   rpc new_block_broadcast (Block) returns (block_broadcast_reply) {}
   rpc existing_block_broadcast (Block) returns (block_broadcast_reply) {}
   rpc new_contract_broadcast (Contract) returns (contract_broadcast_reply) {}
-  rpc show_all_existing_contracts (ExistingContractRequest) returns (ExistingContractReply) {}
-  rpc display_full_blockchain (BlockchainRequest) returns (BlockchainReply) {}
 }
-
 
 // Request handshake.
 message hs_request {
@@ -57,23 +54,4 @@ message Contract {
 
 message contract_broadcast_reply {
   string message = 1;
-}
-
-
-// Additional functionality to plug-in to web application
-message ExistingContractRequest {
-  string message = 1;
-}
-
-message ExistingContractReply {
-  repeated bytes serialized_contracts = 1;
-}
-
-// Additional functionality to plug-in to web application
-message BlockchainRequest {
-  string message = 1;
-} 
-
-message BlockchainReply {
-  bytes response = 1;
 }

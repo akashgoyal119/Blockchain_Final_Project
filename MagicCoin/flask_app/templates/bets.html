@@ -1,0 +1,36 @@
+<h1>Here is a list of all bets placed. </h1>
+
+<table> <!--class="table table-striped table-bordered"> -->
+    <thead>
+      <tr>
+        <th>Event</th>
+        <th>Team</th>
+        <th>Quantity</th>
+        <th>Odds</th>
+        <th>Expiration Date</th>
+        <th>Source of Truth</th>
+        <th>Check Result Time </th>
+        <th>Poster's public key </th>
+        <th>Poster's digital signiture </th>
+        <th>Date/Time of posting </th>
+        <th>Bet Hash Value </th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for bet in bets % }
+        <tr>
+          <td> {{ bet.event }} </td>
+          <td> {{ bet.team }} </td>
+          <td> {{ bet.quantity  }} </td>
+          <td> {{ bet.odds }} </td>
+          <td> {{ bet.expiration_date }} </td>
+          <td> {{ bet.source_of_truth }} </td>
+          <td> {{ bet.check_result_time }} </td>
+          <td> {{ bet.party1_public_key }} </td>
+          <td> {{ bet.party1_digital_sig }} </td>
+          <td> {{ bet.current_time }} </td>
+          <td> {{ bet.contract_hash_value }} </td>
+        </tr>
+      {% endfor %}
+    </tbody>
+</table>

@@ -7,6 +7,11 @@ from MagicCoin.MC_Transaction import Transaction
 from MagicCoin.MC_TxnMemoryPool import TxnMemoryPool
 from MagicCoin.MC_Output import Output
 
+teams = ['Yankees','Red Sox','Blue Jays','Rays','Orioles','Indians','Twins',
+         'Tigers','White Sox','Royals','Astros','Athletics','Mariners',
+         'Angels','Rangers','Braves','Phillies','Nationals','Mets',
+         'Marlins','Cubs','Brewers','Cardinals','Pirates','Reds',
+         'Diamondbacks','Rockies','Dodgers','Giants','Padres']
 
 class User:
     """Class representing User in each node.
@@ -23,8 +28,11 @@ class User:
         """User generates random contract (creates a bet)
            to simulate mining.
         """
-        team_a = str(Output.generate_random_script(5))
-        team_b = str(Output.generate_random_script(5))
+
+        x = random.randint(0,29)
+        y = random.randint(0,29)
+        team_a = teams[x]#str(Output.generate_random_script(5))
+        team_b = teams[y]#str(Output.generate_random_script(5))
         event = team_a + " vs " + team_b
         team = team_a
         quantity = Output.generate_random_value(1000, 5000)

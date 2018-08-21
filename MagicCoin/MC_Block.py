@@ -7,6 +7,7 @@ from MagicCoin.MC_User import User
 from MagicCoin.MC_Header import Header
 import sys
 import random
+import time
 
 
 class Block:
@@ -136,10 +137,10 @@ class Block:
         event = "Gryffindor vs Slytherin"
         team = "Gryffindor"
         quantity = 100000
-        expiration_date = '0'
+        expiration_date = int(time.time())
         odds = 0.1
         source_of_truth = "Albus Dumbledore"
-        check_result_time = '10'
+        check_result_time = int(time.time())
         genesis_contract = Contract(event, team, quantity, expiration_date, odds, source_of_truth, check_result_time,
                             first_user.public_key)
         input_1 = Output(value=genesis_contract.quantity,

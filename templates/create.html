@@ -1,0 +1,34 @@
+<!doctype html>
+<html>
+  <head>
+    <!-- Latest compiled and minified CSS 
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static',filename='style.css') }}">
+
+  -->
+  </head>
+
+  <body>
+    <h1> Enter in the details of your bet </h1><br>
+    <form method="POST" action="/post_contract">
+      <div class="form-group">
+
+         <b> Describe Event </b><input type="text" name="event"><br><br>
+        <b> Choose Team </b><input type="text" name="team"><br><br>
+        <b> Choose Quantity </b><input type="text" name="quantity"><br><br>
+        <b> Choose the odds </b><input type="text" name="odds"><br><br>
+        <b> When is the last date/time you will accept a bet? </b><input type="datetime-local" name="expiration_date"><br><br>
+        <b> What is the website to use as a validation source? </b><input type="text" name="source_of_truth"><br><br>
+        <b> What time should the result be checked at </b><input type="datetime-local" name="check_result_time"><br><br>
+        <b> What is your public key? </b><input type="text" name="party1_public_key"><br><br>
+        <b> Digitally sign this </b><input type="text" name="party1_digital_sig"><br><br>
+      </div>
+      <input class="btn btn-primary" type="submit" value="create contract!">
+    </form>
+
+  </body>
+</html>
+
+
+    
