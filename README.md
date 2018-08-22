@@ -16,12 +16,17 @@ a) MagicCoins
     - 1 MagicCoin = 1000 quidditch
 
 
-b) NAME OF OUR GAMBLING SYSTEM
-    - akash this is your part brah
+b) Application Name
+    - The name of our application is "Magic Contract Maker"
+    - We fully recognize that this is an absolutely terrible name, but our powerpoint
+      template had the word "Magic" on every slide. Application name will definitely
+      be changed in version 2.0. lol
 
 
 b) Docker Images
-    - WHERE DO WE UPLOAD THE DOCKER IMAGES?
+    - DNS_SEED and FULL_NODE images are zipped and uploaded to the directory
+    "/stage/MPCS56600/jaeyeun"
+    - download and unzip both files.
 
 
 c) Source Codes (Python 3.6)
