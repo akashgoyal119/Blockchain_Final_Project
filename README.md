@@ -1,7 +1,7 @@
 <h1> MPCS 56600 - Introduction to Blockchain -- Team Project</h1>
 
 
-TEAM MEMBERS: Akash Goyal, Yilun Hu, Zhihuang Chen, Jae-Yeun Hwang
+<h2> TEAM MEMBERS: Akash Goyal, Yilun Hu, Zhihuang Chen, Jae-Yeun Hwang </h2>
 ======================================
 
 NOTE: Please execute the program using Python3.6
