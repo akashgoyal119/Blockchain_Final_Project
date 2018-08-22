@@ -18,11 +18,11 @@ a) MagicCoins
 
 
 b) NAME OF OUR GAMBLING SYSTEM
+    - akash this is your part brah
 
 
 b) Docker Images
-    - DNS_SEED and FULL_NODE images are zipped and uploaded to the
-    directory "/stage/MPCS56600/jaeyeun"; download and unzip both files.
+    - WHERE DO WE UPLOAD THE DOCKER IMAGES?
 
 
 c) Source Codes (Python 3.6)
