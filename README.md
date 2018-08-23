@@ -17,19 +17,21 @@ a) MagicCoins
 
 
 b) Application Name
-    - The name of our application is "Magic Contract Maker"
-    - We fully recognize that this is an absolutely terrible name, but our powerpoint
+* The name of our application is "Magic Contract Maker"
+* We fully recognize that this is an absolutely terrible name, but our powerpoint
       template had the word "Magic" on every slide. Application name will definitely
       be changed in version 2.0. lol
 
 
-b) Docker Images
-    - DNS_SEED and FULL_NODE images are zipped and uploaded to the directory
-    "/stage/MPCS56600/jaeyeun"
-    - download and unzip both files.
+c) Docker Images
+
+* magic_power:infinity image was zipped and uploaded to the directory 
+"/stage/MPCS56600/jaeyeun"
+    
+* You can both download and unzip the files or just download it from dockerHub.
 
 
-c) Source Codes (Python 3.6)
+d) Source Codes (Python 3.6)
 
     - The python codes are inside the "src" directory.
         1) DNS_SEED.py : DNS_SEED server codes.
@@ -53,47 +55,57 @@ c) Source Codes (Python 3.6)
 
 2. STARTING THE DNS_SEED SERVER
 -------------------
-a) Start 1 docker container with DNS_SEED image and name it DNS_SEED.
+a) Start 1 docker container with magic_power:infinity image and name it DNS_SEED.
 
 b) In terminal (for example):
-
-    - execute: "docker run -it --hostname dns_seed --name DNS_SEED 1d5762ed56db /bin/bash"
+```
+$ docker run -it --hostname dns_seed --name DNS_SEED magic_power:infinity /bin/bash
+```
 
 c) In the container, cd into "Blockchain_Final_Project" directory:
 
-    - execute: "cd Blockchain_Final_Project"
+```
+$ cd Blockchain_Final_Project
+```
 
 d) In the container's "Blockchain_Final_Project" directory:
 
-    - execute: "python3.6 DNS_SEED.py"
+```
+$ python DNS_SEED.py
+```
 
 e) You should see a message that says: 
 
-    - "... Start DNS SEED server ..."
+    ... Start DNS SEED server ...
 
 
 3. STARTING THE FULL_NODE CLIENT/SERVER
 -------------------
+
 a) Start 3 docker containers with FULL_NODE image and name each of them
    FULL_NODE_1, FULL_NODE_2, FULL_NODE_3.
 
-b) For each container, in terminal (for example, for FULL_NODE_1):
-
-    - execute: "docker run -it --hostname full_node_1 --name FULL_NODE_1 --link DNS_SEED:dns_seed 1d5762ed56db /bin/bash"
+b) In terminal (for example, for FULL_NODE_1), type this command to start the container(i is the ith container):
+```
+$ docker run -it --hostname full_node_i --name FULL_NODE_i --link DNS_SEED:dns_seed magic_power:infinity /bin/bash
+```
 
     - IMPORTANT NOTE: Need to link each of the FULL_NODE containers with the DNS_SEED container.
 
 c) In the container, cd into "Blockchain_Final_Project" directory:
 
-    - execute: "cd Blockchain_Final_Project"
+```
+$ cd Blockchain_Final_Project
+```
 
 d) In the container's "Blockchain_Final_Project" directory:
-
-    - execute: "python3.6 FullNode.py"
+```
+$ python FullNode.py
+```
 
 e) You should see a message that looks something like: 
 
-    - "Full Node IP Address: 172.17.0.5"
+    Full Node IP Address: 172.17.0.5
 
 
 4. SOURCE CODE LOGIC
@@ -158,10 +170,23 @@ Currently supported functionalities include
 In the future we plan to implement the "accept_bet" web functionality,
 as well as spending more time focusing on the design of the website (using CSS)
 
-a) go to Docker container of any node that is not DNS_SEED
+The command for running a web application:
 
-b) if Flask is not installed on the container, install it by typing in
-   - pip install flask
-   
-c) Client can be viewed in the web browser after typing in
-   - python3.6 web_app.py
+1) Open a new terminal, then run(assume you open at most 3 miners now) 
+```
+$ docker run -it -p 5000:5000 --hostname full_node_4 --name FULL_NODE_4 --link DNS_SEED:dns_seed magic_power:infinity /bin/bash
+$ cd Blockchain_Final_Project
+$ python FullNode.py
+
+```
+2) Open another terminal, run:
+```
+$ docker exec -it FULL_NODE_4 /bin/bash
+$ cd Blockchain_Final_Project
+$ python web_app.py
+```
+
+3) Now open the browser you like, type:
+```
+localhost:5000
+```
