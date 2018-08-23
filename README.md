@@ -61,6 +61,7 @@ b) In terminal (for example):
 ```
 $ docker run -it --hostname dns_seed --name DNS_SEED cahuanger/magic_power:infinity /bin/bash
 ```
+it should download the image from dockerHub automatically.
 
 c) In the container, cd into "Blockchain_Final_Project" directory:
 
@@ -177,8 +178,8 @@ The command for running a web application:
 $ docker run -it -p 5000:5000 --hostname full_node_4 --name FULL_NODE_4 --link DNS_SEED:dns_seed cahuanger/magic_power:infinity /bin/bash
 $ cd Blockchain_Final_Project
 $ python FullNode.py
-
 ```
+
 2) Open another terminal, run:
 ```
 $ docker exec -it FULL_NODE_4 /bin/bash
