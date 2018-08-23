@@ -26,7 +26,7 @@ b) Application Name
 c) Docker Images
 
 * cahuanger/magic_power:infinity image was zipped and uploaded to the directory 
-"/stage/MPCS56600/jaeyeun"
+"/stage/MPCS56600/zhihuangc"
     
 * You can both download and unzip the files or just download it from dockerHub.
 
